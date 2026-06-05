@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .series-header {
+      display: flex; gap: 2rem; align-items: flex-start;
+      padding: 2rem; max-width: 900px;
+    }
+    .series-poster {
+      width: 160px; min-width: 160px; height: 240px;
+      object-fit: cover; border-radius: 8px;
+    }
+    .series-poster-fallback {
+      width: 160px; min-width: 160px; height: 240px;
+      background: linear-gradient(135deg,#4a0e6e,#0a0a0f);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 3rem;
+    }
+    .series-meta h1 { font-size: 1.8rem; margin-bottom: .4rem; }
+    .series-meta .meta-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
+
+    .temporadas { padding: 0 2rem 3rem; }
+    .temporada { margin-bottom: 2.5rem; }
+    .temporada h2 {
+      color: var(--accent); font-size: 1.1rem; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 1rem;
+      border-bottom: 1px solid #2a1f3d; padding-bottom: .4rem;
+    }
+    .episodios-lista { display: flex; flex-direction: column; gap: .5rem; }
+    .ep-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--card); border-radius: 8px;
+      padding: .75rem 1rem; cursor: pointer;
+      border: 1px solid transparent; transition: border-color .15s;
+    }
+    .ep-item:hover { border-color: var(--accent); }
+    .ep-num {
+      color: var(--accent); font-weight: 700; font-size: .9rem;
+      min-width: 52px;
+    }
+    .ep-title { flex: 1; font-size: .95rem; }
+    .ep-lang {
+      font-size: .75rem; color: var(--muted);
+      background: #1e1a2e; border-radius: 4px; padding: .2rem .5rem;
+    }
+    .ep-leg { font-size: .75rem; color: #9b59b6; margin-left: .25rem; }
+  </style>
+</head>
+<script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
+<body>
+<header>
+  <a class="logo" href="/">🐙 LovecraFlix</a>
+</header>
+
+<button class="back-btn" onclick="history.back()" style="margin: 1rem 2rem 0">← Voltar</button>
+
+<div class="series-header" id="series-header">
+  <div style="color:var(--muted)">Carregando...</div>
+</div>
+
+<div class="temporadas" id="temporadas"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const pasta  = params.get("pasta");
+const nome   = params.get("nome");
+
+async function load() {
+  if (!pasta) return;
+  document.title = `${nome} — LovecraFlix`;
+
+  const [rSeries, rEps] = await Promise.all([
+    fetch("/api/series"),
+    fetch(`/api/series/episodios?pasta=${encodeURIComponent(pasta)}`)
+  ]);
+  const series = await rSeries.json();
+  const eps    = await rEps.json();
+  const serie  = series.find(s => s.pasta === pasta) || {};
+
+  // Header
+  const hdr = document.getElementById("series-header");
+  const poster = serie.poster_local
+    ? `<img class="series-poster" src="/poster?path=${encodeURIComponent(serie.poster_local)}" alt="${nome}">`
+    : `<div class="series-poster-fallback">🐙</div>`;
+  hdr.innerHTML = `
+    ${poster}
+    <div class="series-meta">
+      <h1>${nome}</h1>
+      <div class="meta-row">
+        ${serie.ano ? `<span class="tag">${serie.ano}</span>` : ""}
+        ${serie.genero ? `<span class="tag">${serie.genero}</span>` : ""}
+        <span class="tag">${serie.total_eps || eps.length} episódios</span>
+      </div>
+      ${serie.sinopse ? `<p style="color:var(--muted);font-size:.9rem;max-width:600px">${serie.sinopse}</p>` : ""}
+    </div>`;
+
+  // Agrupa por temporada
+  const porTemp = {};
+  for (const ep of eps) {
+    const t = ep.temporada || 0;
+    (porTemp[t] = porTemp[t] || []).push(ep);
+  }
+
+  const container = document.getElementById("temporadas");
+  for (const t of Object.keys(porTemp).sort((a,b) => a - b)) {
+    const label = t == 0 ? "Episódios" : `Temporada ${t}`;
+    const lista = porTemp[t].map(ep => {
+      const epLabel = ep.episodio ? `E${String(ep.episodio).padStart(2,"0")}` : "";
+      const fname   = ep.arquivo_novo.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"");
+      const titulo  = epLabel ? fname : fname;
+      const leg     = ep.tem_legenda ? `<span class="ep-leg">CC</span>` : "";
+      return `<div class="ep-item" onclick="location.href='/player?id=${ep.id}'">
+        <span class="ep-num">${epLabel || "–"}</span>
+        <span class="ep-title">${fname}</span>
+        <span class="ep-lang">${ep.idioma || ""}</span>
+        ${leg}
+      </div>`;
+    }).join("");
+
+    container.innerHTML += `
+      <div class="temporada">
+        <h2>${label}</h2>
+        <div class="episodios-lista">${lista}</div>
+      </div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

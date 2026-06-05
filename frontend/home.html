@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      color: #e8e0f5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      height: 100vh;
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .poster-bg {
+      position: absolute; inset: 0;
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      gap: 6px; padding: 6px;
+      transform: rotate(-4deg) scale(1.2);
+      transform-origin: center center;
+    }
+    .poster-bg img, .poster-bg .slot {
+      width: 100%; height: 100%;
+      object-fit: cover; border-radius: 4px; display: block;
+    }
+    .poster-bg .slot { background: #16162a; }
+
+    .overlay-dark { position: absolute; inset: 0; background: rgba(10,10,15,0.58); }
+    .overlay-grad {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse at 50% 40%, rgba(74,14,110,0.38) 0%, transparent 65%),
+        linear-gradient(to bottom, rgba(10,10,15,0.3) 0%, rgba(10,10,15,0.1) 45%, rgba(10,10,15,0.95) 100%);
+    }
+
+    .hero-content {
+      position: relative; z-index: 2;
+      text-align: center; padding: 2rem;
+    }
+    .logo {
+      font-size: 4rem; font-weight: 900; letter-spacing: -2px;
+      background: linear-gradient(135deg, #cc88ee, #e74c3c, #f39c12);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: .6rem; line-height: 1;
+      filter: drop-shadow(0 2px 20px rgba(180,60,200,0.5));
+    }
+    .tagline {
+      font-size: 1.5rem; font-weight: 700; color: #fff;
+      margin-bottom: .5rem;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    }
+    .sub { font-size: .95rem; color: #a090c0; margin-bottom: 2.5rem; }
+    .btns { display: flex; gap: 1rem; justify-content: center; }
+
+    .btn-entrar {
+      background: linear-gradient(135deg, #8b35a0, #5a1f6e);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: 1rem; font-weight: 700;
+      padding: .9rem 2.8rem; cursor: pointer; text-decoration: none;
+      box-shadow: 0 4px 24px rgba(123,45,139,.6);
+      transition: transform .18s, box-shadow .18s; display: inline-block;
+    }
+    .btn-entrar:hover { transform: translateY(-3px); box-shadow: 0 10px 35px rgba(123,45,139,.75); }
+
+    .btn-cadastro {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.25); border-radius: 8px;
+      color: #e0d8f5; font-size: 1rem; font-weight: 600;
+      padding: .9rem 2.8rem; cursor: pointer; text-decoration: none;
+      backdrop-filter: blur(6px); display: inline-block;
+      transition: transform .18s, background .18s;
+    }
+    .btn-cadastro:hover { transform: translateY(-3px); background: rgba(255,255,255,0.16); }
+
+    /* ── SEÇÕES ── */
+    .sections { background: #0a0a0f; }
+
+    .section { padding: 3rem 3rem 1rem; }
+    .section-title {
+      font-size: 1.3rem; font-weight: 700; color: #fff;
+      margin-bottom: 1.25rem;
+    }
+
+    /* Carrossel */
+    .carousel-wrap { position: relative; }
+    .carousel {
+      display: flex; gap: .75rem;
+      overflow-x: auto; padding-bottom: .5rem;
+      scroll-behavior: smooth;
+      -ms-overflow-style: none; scrollbar-width: none;
+    }
+    .carousel::-webkit-scrollbar { display: none; }
+
+    .carousel-card {
+      flex: 0 0 140px;
+      border-radius: 6px; overflow: hidden;
+      position: relative; cursor: pointer;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .carousel-card:hover {
+      transform: scale(1.08);
+      box-shadow: 0 8px 28px rgba(100,30,120,.6);
+      z-index: 2;
+    }
+    .carousel-card img {
+      width: 100%; aspect-ratio: 2/3;
+      object-fit: cover; display: block;
+    }
+    .carousel-card .card-lbl {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(5,5,12,0.95), transparent);
+      padding: 1.2rem .5rem .4rem;
+      font-size: .72rem; font-weight: 600; color: #f0eaff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .arrow {
+      position: absolute; top: 50%; transform: translateY(-50%);
+      background: rgba(20,20,40,0.85); border: 1px solid rgba(255,255,255,0.15);
+      color: #fff; border-radius: 50%; width: 38px; height: 38px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 1rem; z-index: 3;
+      transition: background .15s; user-select: none;
+    }
+    .arrow:hover { background: rgba(123,45,139,.7); }
+    .arrow.left  { left: -14px; }
+    .arrow.right { right: -14px; }
+
+    /* Feature cards */
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem; padding: 1.5rem 3rem 3rem;
+    }
+    .feature-card {
+      background: linear-gradient(135deg, #16162a, #1e1438);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px; padding: 1.5rem 1.25rem;
+      display: flex; flex-direction: column; justify-content: space-between;
+      min-height: 160px;
+    }
+    .feature-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: .5rem; }
+    .feature-card p  { font-size: .82rem; color: #8a7fa0; line-height: 1.5; }
+    .feature-card .icon { font-size: 2.4rem; margin-top: .75rem; text-align: right; }
+
+    /* Banner Lovecraft */
+    .lv-banner {
+      display: flex; align-items: center; gap: 1.5rem;
+      margin: 0 3rem 2rem;
+      background: linear-gradient(135deg, #1a0d2e, #2a1040);
+      border: 1px solid rgba(155,89,182,0.3);
+      border-radius: 12px; padding: 1.25rem 1.75rem;
+    }
+    @keyframes pipoca-bounce {
+      0%,100% { transform: translateY(0) rotate(0deg) scale(1); }
+      20%      { transform: translateY(-10px) rotate(-6deg) scale(1.1); }
+      40%      { transform: translateY(-6px) rotate(5deg) scale(1.08); }
+      60%      { transform: translateY(-12px) rotate(-4deg) scale(1.12); }
+      80%      { transform: translateY(-4px) rotate(3deg) scale(1.05); }
+    }
+    @keyframes grain-pop {
+      0%,100% { transform: translateY(0) scale(1); opacity: .95; }
+      50%      { transform: translateY(-6px) scale(1.15); opacity: 1; }
+    }
+    .lv-icon {
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 12px rgba(231,76,60,.5));
+      cursor: pointer; transition: filter .3s;
+    }
+    .lv-icon:hover {
+      animation: pipoca-bounce .6s ease-in-out;
+      filter: drop-shadow(0 8px 24px rgba(231,76,60,.8)) drop-shadow(0 0 12px rgba(255,200,50,.5));
+    }
+    .lv-icon:hover ellipse {
+      animation: grain-pop .4s ease-in-out infinite alternate;
+    }
+    .lv-quote {
+      font-size: .98rem; font-weight: 600; color: #e8e0f5;
+      margin-bottom: .3rem; font-style: italic; line-height: 1.5;
+    }
+    .lv-author { font-size: .78rem; color: #9b59b6; letter-spacing: .5px; }
+
+    /* Stats bar */
+    .stats {
+      display: flex; gap: 2rem; justify-content: center; flex-wrap: wrap;
+      padding: 2rem; border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .stat { text-align: center; }
+    .stat-num { font-size: 2rem; font-weight: 900; color: #9b59b6; }
+    .stat-lbl  { font-size: .78rem; color: #8a7fa0; margin-top: .2rem; }
+  </style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="poster-bg" id="poster-bg"></div>
+  <div class="overlay-dark"></div>
+  <div class="overlay-grad"></div>
+  <div class="hero-content">
+    <div class="logo">🐙 LovecraFlix</div>
+    <div class="tagline">Seu acervo pessoal de filmes e séries</div>
+    <div class="sub">Filmes, séries e documentários do seu disco, prontos para assistir no browser</div>
+    <div class="btns">
+      <a href="/login"    class="btn-entrar">Entrar</a>
+      <a href="/cadastro" class="btn-cadastro">Criar conta</a>
+    </div>
+  </div>
+</section>
+
+<!-- SEÇÕES -->
+<div class="sections">
+
+  <!-- Carrossel de destaques -->
+  <div class="section">
+    <div class="section-title">Em destaque no acervo</div>
+    <div class="carousel-wrap">
+      <div class="arrow left"  onclick="moverCarrossel('carousel-1', -1)">&#8249;</div>
+      <div class="carousel" id="carousel-1"></div>
+      <div class="arrow right" onclick="moverCarrossel('carousel-1',  1)">&#8250;</div>
+    </div>
+  </div>
+
+  <!-- Feature cards -->
+  <div class="features">
+    <div class="feature-card">
+      <div>
+        <h3>Todos os formatos</h3>
+        <p>MKV, MP4, AVI — qualquer codec é transcodificado automaticamente via ffmpeg.</p>
+      </div>
+      <div class="icon">⚡</div>
+    </div>
+    <div class="feature-card">
+      <div>
+        <h3>Legendas automáticas</h3>
+        <p>Arquivos .srt são convertidos para WebVTT e carregados direto no player.</p>
+      </div>
+      <div class="icon">📝</div>
+    </div>
+    <div class="feature-card">
+      <div>
+        <h3>Séries organizadas</h3>
+        <p>Episódios agrupados por temporada com suporte a múltiplos idiomas.</p>
+      </div>
+      <div class="icon">📺</div>
+    </div>
+    <div class="feature-card">
+      <div>
+        <h3>Horror Cósmico</h3>
+        <p>Curadoria especial de filmes de Horror Cósmico e terror lovecraftiano.</p>
+      </div>
+      <div class="icon">🐙</div>
+    </div>
+  </div>
+
+  <!-- Banner Lovecraft -->
+  <div class="lv-banner">
+    <span class="lv-icon">
+      <svg width="64" height="72" viewBox="0 0 64 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Pipoca saindo do balde -->
+        <ellipse cx="18" cy="26" rx="7" ry="6" fill="#fff9e6" opacity=".95"/>
+        <ellipse cx="32" cy="21" rx="8" ry="7" fill="#fffde7" opacity=".97"/>
+        <ellipse cx="46" cy="25" rx="7" ry="6" fill="#fff8e1" opacity=".95"/>
+        <ellipse cx="11" cy="32" rx="5" ry="5" fill="#fffde7" opacity=".9"/>
+        <ellipse cx="53" cy="31" rx="5" ry="5" fill="#fff9e6" opacity=".9"/>
+        <ellipse cx="25" cy="28" rx="6" ry="5.5" fill="#fffff0" opacity=".93"/>
+        <ellipse cx="40" cy="27" rx="6" ry="5.5" fill="#fffff0" opacity=".93"/>
+        <!-- Balde - listras vermelhas e brancas -->
+        <path d="M10 38 L14 68 L50 68 L54 38 Z" fill="#e74c3c"/>
+        <path d="M10 38 L14 68 L21 68 L19 38 Z" fill="#fff" opacity=".9"/>
+        <path d="M26 38 L27.5 68 L36.5 68 L38 38 Z" fill="#fff" opacity=".9"/>
+        <path d="M45 38 L50 68 L43 68 L41 38 Z" fill="#fff" opacity=".9"/>
+        <!-- Borda superior do balde -->
+        <rect x="8" y="35" width="48" height="6" rx="3" fill="#c0392b"/>
+        <!-- Estrela -->
+        <circle cx="32" cy="53" r="9" fill="#fff" opacity=".15"/>
+        <circle cx="32" cy="53" r="7" fill="#fff" opacity=".1"/>
+        <text x="32" y="57.5" text-anchor="middle" font-size="10" fill="#fff" opacity=".9">★</text>
+      </svg>
+    </span>
+    <div class="lv-text">
+      <div class="lv-quote" id="lv-quote"></div>
+      <div class="lv-author">— H.P. Lovecraft</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-num" id="s-filmes">…</div><div class="stat-lbl">Filmes</div></div>
+    <div class="stat"><div class="stat-num" id="s-series">…</div><div class="stat-lbl">Séries</div></div>
+    <div class="stat"><div class="stat-num" id="s-docs">…</div><div class="stat-lbl">Documentários</div></div>
+    <div class="stat"><div class="stat-num" id="s-generos">…</div><div class="stat-lbl">Gêneros</div></div>
+  </div>
+
+</div>
+
+<script>
+if (localStorage.getItem("lc_token")) location.href = "/";
+
+const frases = [
+  "A emoção mais antiga e mais forte da humanidade é o medo, e o mais antigo e mais forte dos medos é o medo do desconhecido.",
+  "Aquilo que não está morto pode eternamente jazer, e com estranhos éons até a morte pode morrer.",
+  "A coisa mais misericordiosa do mundo é a incapacidade da mente humana de correlacionar tudo o que contém.",
+  "Em sua morada em R'lyeh, o morto Cthulhu aguarda sonhando.",
+  "O cosmos é indiferente. Apenas nós, insetos efêmeros, atribuímos a ele significado.",
+  "Ph'nglui mglw'nafh Cthulhu R'lyeh wgah'nagl fhtagn.",
+  "Não existe prazer real na existência de uma criatura senciente — apenas a cessação temporária da dor.",
+  "O universo real é demasiado vasto, demasiado indiferente e demasiado aterrador para ser contemplado de frente.",
+];
+let fraseIdx = Math.floor(Math.random() * frases.length);
+const el = document.getElementById("lv-quote");
+el.textContent = frases[fraseIdx];
+setInterval(() => {
+  el.style.opacity = "0";
+  el.style.transition = "opacity .5s";
+  setTimeout(() => {
+    fraseIdx = (fraseIdx + 1) % frases.length;
+    el.textContent = frases[fraseIdx];
+    el.style.opacity = "1";
+  }, 500);
+}, 7000);
+
+function moverCarrossel(id, dir) {
+  const el = document.getElementById(id);
+  el.scrollBy({ left: dir * 600, behavior: "smooth" });
+}
+
+async function init() {
+  // Posters de fundo
+  const bgRes   = await fetch("/api/home-posters");
+  const bgPaths = await bgRes.json();
+  const grid    = document.getElementById("poster-bg");
+  const shuffled = [...bgPaths].sort(() => Math.random() - .5);
+  for (let i = 0; i < 32; i++) {
+    const src = shuffled[i % shuffled.length];
+    if (src) {
+      const img = document.createElement("img");
+      img.src = `/poster?path=${encodeURIComponent(src)}`;
+      img.loading = "lazy";
+      img.onerror = () => { const d = document.createElement("div"); d.className="slot"; img.replaceWith(d); };
+      grid.appendChild(img);
+    } else {
+      const d = document.createElement("div"); d.className = "slot"; grid.appendChild(d);
+    }
+  }
+
+  // Carrossel
+  const destRes  = await fetch("/api/destaques");
+  const destaques = await destRes.json();
+  const carousel = document.getElementById("carousel-1");
+  destaques.forEach(f => {
+    const card = document.createElement("div");
+    card.className = "carousel-card";
+    card.innerHTML = `
+      <img src="/poster?path=${encodeURIComponent(f.poster_local)}" loading="lazy">
+      <div class="card-lbl">${f.titulo_pt || ""}</div>`;
+    carousel.appendChild(card);
+  });
+
+  // Stats
+  const gRes  = await fetch("/api/generos");
+  const generos = await gRes.json();
+  document.getElementById("s-generos").textContent = generos.length;
+
+  const sRes  = await fetch("/api/series");
+  const series = await sRes.json();
+  document.getElementById("s-series").textContent = series.length;
+
+  const cRes   = await fetch("/api/colecoes");
+  const colecoes = await cRes.json();
+  document.getElementById("s-docs").textContent = colecoes.length;
+
+  const total = generos.reduce((a, g) => a + g.total, 0);
+  document.getElementById("s-filmes").textContent = total;
+}
+
+init();
+</script>
+</body>
+</html>

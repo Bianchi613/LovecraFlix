@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .col-header {
+      display: flex; gap: 2rem; align-items: flex-start;
+      padding: 2rem; max-width: 900px;
+    }
+    .col-poster {
+      width: 160px; min-width: 160px; height: 240px;
+      object-fit: cover; border-radius: 8px;
+    }
+    .col-poster-fallback {
+      width: 160px; min-width: 160px; height: 240px;
+      background: linear-gradient(135deg,#2c3e50,#0a0a0f);
+      border-radius: 8px; display: flex; align-items: center;
+      justify-content: center; font-size: 3rem;
+    }
+    .col-meta h1 { font-size: 1.8rem; margin-bottom: .4rem; }
+    .col-meta .meta-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
+
+    .episodios-section { padding: 0 2rem 3rem; }
+    .episodios-section h2 {
+      color: var(--accent); font-size: 1rem; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 1rem;
+      border-bottom: 1px solid #2a1f3d; padding-bottom: .4rem;
+    }
+    .ep-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--card); border-radius: 8px;
+      padding: .75rem 1rem; cursor: pointer; margin-bottom: .5rem;
+      border: 1px solid transparent; transition: border-color .15s;
+    }
+    .ep-item:hover { border-color: var(--accent); }
+    .ep-num { color: var(--accent); font-weight: 700; min-width: 32px; }
+    .ep-title { flex: 1; font-size: .95rem; }
+    .ep-lang { font-size: .75rem; color: var(--muted); background: #1e1a2e; border-radius: 4px; padding: .2rem .5rem; }
+    .ep-leg  { font-size: .75rem; color: #9b59b6; margin-left: .25rem; }
+  </style>
+</head>
+<script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
+<body>
+<header>
+  <a class="logo" href="/">🐙 LovecraFlix</a>
+</header>
+
+<button class="back-btn" onclick="history.back()" style="margin: 1rem 2rem 0">← Voltar</button>
+
+<div class="col-header" id="col-header">
+  <div style="color:var(--muted)">Carregando...</div>
+</div>
+
+<div class="episodios-section" id="episodios-section"></div>
+
+<script>
+const params  = new URLSearchParams(location.search);
+const colecao = params.get("colecao");
+
+async function load() {
+  if (!colecao) return;
+  document.title = `${colecao} — LovecraFlix`;
+
+  const [rCol, rEps] = await Promise.all([
+    fetch("/api/colecoes"),
+    fetch(`/api/colecoes/episodios?colecao=${encodeURIComponent(colecao)}`)
+  ]);
+  const colecoes = await rCol.json();
+  const eps      = await rEps.json();
+  const col      = colecoes.find(c => c.colecao === colecao) || {};
+
+  // Header
+  const hdr = document.getElementById("col-header");
+  const poster = col.poster_local
+    ? `<img class="col-poster" src="/poster?path=${encodeURIComponent(col.poster_local)}" alt="${colecao}">`
+    : `<div class="col-poster-fallback">📽️</div>`;
+
+  hdr.innerHTML = `
+    ${poster}
+    <div class="col-meta">
+      <h1>${colecao}</h1>
+      <div class="meta-row">
+        ${col.genero ? `<span class="tag">${col.genero}</span>` : ""}
+        <span class="tag">${eps.length} episódio${eps.length !== 1 ? "s" : ""}</span>
+      </div>
+      ${col.sinopse ? `<p style="color:var(--muted);font-size:.9rem;max-width:600px">${col.sinopse}</p>` : ""}
+    </div>`;
+
+  // Episódios
+  const sec = document.getElementById("episodios-section");
+  sec.innerHTML = `<h2>Episódios</h2>`;
+
+  eps.forEach((ep, i) => {
+    const titulo = ep.titulo_pt || "";
+    // Remove o prefixo "Colecao: " do título para exibir só o nome do episódio
+    const label  = titulo.includes(":") ? titulo.split(":").slice(1).join(":").trim() : titulo;
+    const leg    = ep.tem_legenda ? `<span class="ep-leg">CC</span>` : "";
+    const item   = document.createElement("div");
+    item.className = "ep-item";
+    item.onclick   = () => location.href = `/player?id=${ep.id}`;
+    item.innerHTML = `
+      <span class="ep-num">${i + 1}</span>
+      <span class="ep-title">${label}</span>
+      <span class="ep-lang">${ep.idioma || ""}</span>
+      ${leg}`;
+    sec.appendChild(item);
+  });
+}
+
+load();
+</script>
+</body>
+</html>

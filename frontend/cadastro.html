@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix — Criar conta</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      color: #e8e0f5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background-image: radial-gradient(ellipse at 20% 30%, rgba(74,14,110,0.25) 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 70%, rgba(107,26,26,0.15) 0%, transparent 60%);
+    }
+
+    .box {
+      background: rgba(20,20,32,0.92);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      width: 100%; max-width: 380px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    }
+
+    .logo {
+      font-size: 1.8rem; font-weight: 900; letter-spacing: -1px;
+      background: linear-gradient(135deg, #b06fcc, #e74c3c);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center; margin-bottom: .3rem;
+    }
+
+    .subtitle {
+      text-align: center; color: #8a7fa0;
+      font-size: .85rem; margin-bottom: 2rem;
+    }
+
+    label {
+      display: block; font-size: .78rem;
+      color: #8a7fa0; margin-bottom: .35rem; margin-top: 1.1rem;
+      letter-spacing: .5px; text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: .65rem .9rem;
+      color: #e8e0f5; font-size: .95rem; outline: none;
+      transition: border .2s, background .2s;
+    }
+    input:focus {
+      border-color: #7b2d8b;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .btn {
+      width: 100%; margin-top: 1.75rem;
+      background: linear-gradient(135deg, #7b2d8b, #5a1f6e);
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 1rem; font-weight: 600;
+      padding: .75rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 15px rgba(123,45,139,.4);
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+
+    .login-link {
+      text-align: center; margin-top: 1.25rem;
+      font-size: .85rem; color: #6a6080;
+    }
+    .login-link a { color: #9b59b6; text-decoration: none; }
+    .login-link a:hover { text-decoration: underline; }
+
+    .erro {
+      margin-top: 1rem; padding: .6rem .9rem;
+      background: rgba(192,57,43,.15);
+      border: 1px solid rgba(192,57,43,.3);
+      border-radius: 6px; color: #e74c3c;
+      font-size: .85rem; display: none;
+    }
+    .sucesso {
+      margin-top: 1rem; padding: .6rem .9rem;
+      background: rgba(39,174,96,.15);
+      border: 1px solid rgba(39,174,96,.3);
+      border-radius: 6px; color: #2ecc71;
+      font-size: .85rem; display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">🐙 LovecraFlix</div>
+  <div class="subtitle">Criar nova conta</div>
+
+  <form id="form">
+    <label>Nome</label>
+    <input type="text" id="nome" placeholder="Seu nome" required autocomplete="name">
+
+    <label>Email</label>
+    <input type="email" id="email" placeholder="seu@email.com" required autocomplete="email">
+
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="Mínimo 6 caracteres" required minlength="6" autocomplete="new-password">
+
+    <label>Confirmar senha</label>
+    <input type="password" id="confirmar" placeholder="••••••••" required autocomplete="new-password">
+
+    <button class="btn" type="submit">Criar conta</button>
+    <div class="erro"    id="erro"></div>
+    <div class="sucesso" id="sucesso"></div>
+  </form>
+
+  <div class="login-link">Já tem conta? <a href="/login">Entrar</a></div>
+</div>
+
+<script>
+if (localStorage.getItem("lc_token")) location.href = "/";
+
+document.getElementById("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const erro    = document.getElementById("erro");
+  const sucesso = document.getElementById("sucesso");
+  erro.style.display = sucesso.style.display = "none";
+
+  const senha     = document.getElementById("senha").value;
+  const confirmar = document.getElementById("confirmar").value;
+
+  if (senha !== confirmar) {
+    erro.textContent = "As senhas não coincidem.";
+    erro.style.display = "block";
+    return;
+  }
+
+  const r = await fetch("/auth/cadastro", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      nome:  document.getElementById("nome").value,
+      email: document.getElementById("email").value,
+      senha
+    })
+  });
+
+  if (r.ok) {
+    sucesso.textContent = "Conta criada! Redirecionando...";
+    sucesso.style.display = "block";
+    const data = await r.json();
+    localStorage.setItem("lc_token", data.token);
+    localStorage.setItem("lc_nome",  data.nome);
+    setTimeout(() => location.href = "/", 1200);
+  } else {
+    const msg = await r.json();
+    erro.textContent = msg.detail || "Erro ao criar conta.";
+    erro.style.display = "block";
+  }
+});
+</script>
+</body>
+</html>

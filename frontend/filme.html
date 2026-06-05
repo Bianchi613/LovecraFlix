@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .filme-header {
+      display: flex; gap: 2rem; align-items: flex-start;
+      padding: 2rem; max-width: 900px;
+    }
+    .versoes-lista { padding: 0 2rem 3rem; max-width: 700px; }
+    .versoes-lista h2 {
+      color: var(--accent); font-size: 1rem; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 1rem;
+      border-bottom: 1px solid #2a1f3d; padding-bottom: .4rem;
+    }
+    .versao-item {
+      display: flex; align-items: center; gap: 1rem;
+      background: var(--card); border-radius: 8px;
+      padding: .85rem 1.2rem; cursor: pointer; margin-bottom: .5rem;
+      border: 1px solid transparent; transition: border-color .15s;
+    }
+    .versao-item:hover { border-color: var(--accent); }
+    .versao-icon { font-size: 1.4rem; }
+    .versao-info { flex: 1; }
+    .versao-idioma { font-weight: 600; font-size: .95rem; }
+    .versao-arquivo { font-size: .78rem; color: var(--muted); margin-top: .15rem; }
+    .versao-leg { font-size: .75rem; color: #9b59b6; margin-left: auto; }
+  </style>
+</head>
+<script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
+<body>
+<header>
+  <a class="logo" href="/">🐙 LovecraFlix</a>
+</header>
+
+<button class="back-btn" onclick="history.back()" style="margin: 1rem 2rem 0">← Voltar</button>
+
+<div class="filme-header" id="filme-header">
+  <div style="color:var(--muted)">Carregando...</div>
+</div>
+
+<div class="versoes-lista" id="versoes-lista"></div>
+
+<script>
+const params = new URLSearchParams(location.search);
+const titulo = params.get("titulo");
+
+async function load() {
+  if (!titulo) return;
+  document.title = `${titulo} — LovecraFlix`;
+
+  const r      = await fetch(`/api/filmes/versoes?titulo=${encodeURIComponent(titulo)}`);
+  const versoes = await r.json();
+  if (!versoes.length) return;
+
+  const f = versoes[0];
+
+  // Header
+  const hdr = document.getElementById("filme-header");
+  const poster = f.poster_local
+    ? `<img class="movie-poster-lg" src="/poster?path=${encodeURIComponent(f.poster_local)}" alt="${titulo}">`
+    : `<div class="movie-poster-lg" style="background:linear-gradient(135deg,#4a0e6e,#0a0a0f);display:flex;align-items:center;justify-content:center;font-size:4rem;border-radius:8px">🎬</div>`;
+
+  const horrorBadge = f.subgenero === "Horror Cosmico"
+    ? `<span class="tag horror">🐙 Horror Cósmico</span>` : "";
+
+  hdr.innerHTML = `
+    ${poster}
+    <div class="movie-meta">
+      <h1>${titulo}</h1>
+      ${f.titulo_original && f.titulo_original !== titulo
+        ? `<div style="color:var(--muted);font-size:.9rem;margin-bottom:.5rem"><em>${f.titulo_original}</em></div>` : ""}
+      <div class="meta-row">
+        ${f.ano ? `<span class="tag">${f.ano}</span>` : ""}
+        ${f.genero ? `<span class="tag">${f.genero}</span>` : ""}
+        ${horrorBadge}
+        ${f.tmdb_url ? `<a href="${f.tmdb_url}" target="_blank" style="color:#9b59b6;font-size:.8rem">TMDB ↗</a>` : ""}
+      </div>
+      ${f.sinopse ? `<p class="synopsis">${f.sinopse}</p>` : ""}
+    </div>`;
+
+  // Lista de versões
+  const lista = document.getElementById("versoes-lista");
+  lista.innerHTML = `<h2>Escolha a versão</h2>`;
+
+  for (const v of versoes) {
+    const fname = v.arquivo_novo.replace(/\\/g, "/").split("/").pop();
+    const leg   = v.tem_legenda ? `<span class="versao-leg">📝 Legenda</span>` : "";
+    const icon  = (v.idioma || "").toLowerCase().includes("port") ? "🇧🇷" : "🎬";
+    const item  = document.createElement("div");
+    item.className = "versao-item";
+    item.onclick   = () => location.href = `/player?id=${v.id}`;
+    item.innerHTML = `
+      <span class="versao-icon">${icon}</span>
+      <div class="versao-info">
+        <div class="versao-idioma">${v.idioma || "Desconhecido"}</div>
+        <div class="versao-arquivo">${fname}</div>
+      </div>
+      ${leg}`;
+    lista.appendChild(item);
+  }
+}
+
+load();
+</script>
+</body>
+</html>

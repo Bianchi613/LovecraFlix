@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix — Player</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
+<body>
+
+<!-- Vídeo no topo, full-width -->
+<div class="player-wrap" id="player-wrap">
+  <button class="player-back back-btn" onclick="history.back()">← Voltar</button>
+  <video id="player" controls preload="metadata"></video>
+</div>
+
+<!-- Informações abaixo do vídeo -->
+<div class="player-info" id="player-info"></div>
+
+<script>
+const params   = new URLSearchParams(location.search);
+const filmeId  = parseInt(params.get("id"));
+let   vizinhos = { prev: null, next: null };
+
+async function navegar(dir) {
+  const id = dir === -1 ? vizinhos.prev : vizinhos.next;
+  if (id) location.href = `/player?id=${id}`;
+}
+
+async function load() {
+  if (!filmeId) return;
+
+  const [rFilme, rNav] = await Promise.all([
+    fetch(`/api/filmes/${filmeId}`),
+    fetch(`/api/filmes/nav?id=${filmeId}`)
+  ]);
+  const f   = await rFilme.json();
+  const nav = await rNav.json();
+  vizinhos  = nav;
+
+  document.title = `${f.titulo_pt || f.titulo} — LovecraFlix`;
+
+  // Configura o vídeo
+  const video = document.getElementById("player");
+  if (f.poster_local) {
+    video.poster = `/poster?path=${encodeURIComponent(f.poster_local)}`;
+  }
+
+  if (f.arquivo_novo) {
+    const transcodeSrc = `/transcode?path=${encodeURIComponent(f.arquivo_novo)}`;
+    const directSrc    = `/video?path=${encodeURIComponent(f.arquivo_novo)}`;
+    video.src = f.needs_transcode ? transcodeSrc : directSrc;
+
+    video.addEventListener("error", () => {
+      if (video.src !== transcodeSrc) {
+        video.src = transcodeSrc;
+        video.load();
+        video.play();
+      }
+    });
+
+    if (f.tem_legenda) {
+      const stem  = f.arquivo_novo.substring(0, f.arquivo_novo.lastIndexOf("."));
+      const track = document.createElement("track");
+      track.kind = "subtitles"; track.srclang = "pt";
+      track.label = "Português"; track.default = true;
+      track.src = `/subtitle?path=${encodeURIComponent(stem + ".srt")}`;
+      video.appendChild(track);
+    }
+  }
+
+  const btnPrev = "";
+  const btnNext = "";
+
+  // Badges
+  const horrorBadge = f.subgenero === "Horror Cosmico"
+    ? `<span class="tag horror">🐙 Horror Cósmico</span>` : "";
+  const legBadge = f.tem_legenda
+    ? `<span class="tag">📝 Legenda</span>` : "";
+
+  // Info section
+  document.getElementById("player-info").innerHTML = `
+    <div class="player-title-row">
+      <div>
+        <h1>${f.titulo_pt || f.titulo || "Sem título"}</h1>
+        ${f.titulo_original && f.titulo_original !== f.titulo_pt
+          ? `<div class="player-original">${f.titulo_original}</div>` : ""}
+      </div>
+    </div>
+    <div class="meta-row" style="margin-bottom:1.25rem">
+      ${f.ano    ? `<span class="tag">${f.ano}</span>`    : ""}
+      ${f.genero ? `<span class="tag">${f.genero}</span>` : ""}
+      ${f.idioma ? `<span class="tag">${f.idioma}</span>` : ""}
+      ${horrorBadge}
+      ${legBadge}
+      ${f.tmdb_url ? `<a href="${f.tmdb_url}" target="_blank" class="tmdb-link">TMDB ↗</a>` : ""}
+    </div>
+    ${f.sinopse ? `<p class="player-synopsis">${f.sinopse}</p>` : ""}
+  `;
+}
+
+load();
+</script>
+</body>
+</html>

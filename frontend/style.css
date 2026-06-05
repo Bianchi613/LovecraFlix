@@ -1,0 +1,289 @@
+:root {
+  --bg:      #0a0a0f;
+  --surface: #111118;
+  --card:    #16162a;
+  --accent:  #7b2d8b;
+  --accent2: #4a0e6e;
+  --text:    #e8e0f5;
+  --muted:   #8a7fa0;
+  --horror:  #6b1a1a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: rgba(10,10,15,0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  position: sticky; top: 0; z-index: 100;
+  padding: .85rem 2rem;
+  display: flex; align-items: center; gap: 2rem;
+}
+
+.logo {
+  font-size: 1.55rem; font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #b06fcc, #e74c3c);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap; text-decoration: none;
+}
+
+.search-bar {
+  flex: 1; max-width: 420px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: .5rem 1.1rem;
+  color: var(--text); font-size: .9rem; outline: none;
+  transition: border .2s, background .2s;
+}
+.search-bar:focus {
+  border-color: var(--accent);
+  background: rgba(255,255,255,0.09);
+}
+.search-bar::placeholder { color: var(--muted); }
+
+select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: .45rem .8rem;
+  color: var(--text); font-size: .9rem; cursor: pointer;
+  outline: none; transition: border .2s;
+}
+select:focus { border-color: var(--accent); }
+select option { background: #1a1a2e; }
+
+/* ── Layout ── */
+.layout { display: flex; gap: 0; }
+
+/* ── Sidebar ── */
+aside {
+  width: 210px; min-width: 210px;
+  padding: 1.5rem .75rem;
+  background: var(--surface);
+  border-right: 1px solid rgba(255,255,255,0.05);
+  height: calc(100vh - 58px);
+  position: sticky; top: 58px;
+  overflow-y: auto;
+}
+
+aside h3 {
+  font-size: .68rem; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--muted); margin-bottom: 1rem; padding-left: .75rem;
+}
+
+.genre-btn {
+  display: flex; align-items: center;
+  width: 100%; background: none; border: none; cursor: pointer;
+  color: var(--muted); text-align: left;
+  padding: .45rem .75rem; border-radius: 6px;
+  font-size: .88rem; transition: background .15s, color .15s;
+  gap: .4rem;
+}
+.genre-btn:hover { background: rgba(123,45,139,.2); color: var(--text); }
+.genre-btn.active {
+  background: rgba(123,45,139,.25);
+  color: #fff; font-weight: 600;
+  border-left: 3px solid var(--accent);
+  padding-left: calc(.75rem - 3px);
+}
+.genre-btn .count {
+  margin-left: auto; color: var(--muted);
+  font-size: .75rem; font-weight: 400;
+}
+.genre-btn.active .count { color: rgba(255,255,255,.5); }
+
+/* ── Main ── */
+main { flex: 1; padding: 1.5rem 2rem; }
+
+.section-title {
+  font-size: 1rem; font-weight: 600;
+  color: var(--muted); margin-bottom: 1.25rem;
+  letter-spacing: .3px;
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 1.1rem;
+}
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border-radius: 10px; overflow: hidden;
+  cursor: pointer; position: relative;
+  transition: transform .22s ease, box-shadow .22s ease;
+}
+.card:hover {
+  transform: translateY(-6px) scale(1.03);
+  box-shadow: 0 16px 40px rgba(100,30,120,.55);
+  z-index: 2;
+}
+
+.card-poster {
+  width: 100%; aspect-ratio: 2/3; object-fit: cover;
+  display: block; background: var(--surface);
+  transition: filter .22s;
+}
+.card:hover .card-poster { filter: brightness(1.08); }
+
+.card-poster-fallback {
+  width: 100%; aspect-ratio: 2/3;
+  background: linear-gradient(160deg, #2a1f3d, #0a0a0f);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2.8rem;
+}
+
+/* Gradiente sobre o poster com título */
+.card-info {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  background: linear-gradient(to top, rgba(5,5,12,0.97) 0%, rgba(5,5,12,0.7) 60%, transparent 100%);
+  padding: 2rem .65rem .6rem;
+}
+.card-title {
+  font-size: .8rem; font-weight: 600;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  color: #f0eaff;
+}
+.card-year { font-size: .7rem; color: var(--muted); margin-top: .15rem; }
+
+.badge-horror {
+  position: absolute; top: .45rem; right: .45rem;
+  background: rgba(80,10,10,.88);
+  border: 1px solid rgba(192,57,43,.6);
+  border-radius: 4px; padding: .15rem .4rem;
+  font-size: .62rem; font-weight: 700;
+  color: #e74c3c; backdrop-filter: blur(4px);
+}
+
+/* ── Back button (usado fora do player também) ── */
+.back-btn {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  cursor: pointer; color: var(--text);
+  padding: .45rem 1rem; border-radius: 6px;
+  font-size: .88rem;
+  transition: background .2s, border-color .2s;
+}
+.back-btn:hover {
+  background: rgba(255,255,255,.15);
+  border-color: rgba(255,255,255,.25);
+}
+
+/* ── Player ── */
+.player-wrap {
+  position: relative;
+  background: #000;
+  width: 100%;
+}
+.player-wrap video {
+  width: 100%; display: block;
+  aspect-ratio: 16 / 9;
+  max-height: 80vh;
+  object-fit: contain;
+  background: #000;
+}
+.player-back {
+  position: absolute; top: 1rem; left: 1rem; z-index: 10;
+  opacity: 0; transition: opacity .25s;
+  margin-bottom: 0;
+}
+.player-wrap:hover .player-back { opacity: 1; }
+
+.player-info {
+  max-width: 1100px; margin: 0 auto;
+  padding: 1.75rem 2.5rem 3rem;
+}
+
+.player-title-row {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 1.5rem;
+  margin-bottom: .35rem;
+}
+.player-title-row h1 {
+  font-size: 2rem; line-height: 1.2; font-weight: 800;
+}
+.player-original {
+  font-size: .9rem; color: var(--muted);
+  font-style: italic; margin-top: .2rem; margin-bottom: .75rem;
+}
+.player-nav {
+  display: flex; gap: .6rem; flex-shrink: 0; margin-top: .25rem;
+}
+.nav-btn {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 8px; color: var(--text);
+  padding: .5rem 1rem; cursor: pointer;
+  font-size: .82rem; white-space: nowrap;
+  transition: background .2s;
+  max-width: 200px; overflow: hidden;
+  text-overflow: ellipsis;
+}
+.nav-btn:hover:not(:disabled) { background: rgba(123,45,139,.35); border-color: var(--accent); }
+.nav-btn:disabled { opacity: .35; cursor: default; }
+
+.meta-row { display: flex; gap: .5rem; flex-wrap: wrap; margin-bottom: .75rem; }
+.tag {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 20px;
+  padding: .2rem .7rem; font-size: .78rem; color: var(--muted);
+}
+.tag.horror {
+  background: rgba(107,26,26,.4);
+  border-color: rgba(192,57,43,.5);
+  color: #e74c3c;
+}
+.tmdb-link { color: #9b59b6; font-size: .8rem; align-self: center; }
+.tmdb-link:hover { text-decoration: underline; }
+
+.player-synopsis {
+  font-size: 1rem; line-height: 1.8;
+  color: #b8b0cc; max-width: 760px;
+}
+
+/* Legacy — usado em filme.html, series.html etc */
+.movie-header { display: flex; gap: 2rem; margin-bottom: 2rem; }
+.movie-poster-lg {
+  width: 190px; min-width: 190px; border-radius: 10px;
+  box-shadow: 0 12px 40px rgba(0,0,0,.7);
+}
+.movie-meta h1 { font-size: 1.75rem; margin-bottom: .4rem; line-height: 1.2; }
+.synopsis { font-size: .92rem; line-height: 1.75; color: #b8b0cc; max-width: 640px; }
+
+.no-results {
+  text-align: center; padding: 5rem 2rem;
+  color: var(--muted); font-size: 1.05rem;
+}
+
+/* ── User avatar button ── */
+.user-avatar-btn {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; background: #1a1a2e;
+  border: 2px solid rgba(123,45,139,.5);
+  cursor: pointer; text-decoration: none;
+  transition: border-color .2s, box-shadow .2s;
+  flex-shrink: 0;
+}
+.user-avatar-btn:hover {
+  border-color: var(--accent);
+  box-shadow: 0 0 10px rgba(123,45,139,.5);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--accent2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix — Login</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #0a0a0f;
+      color: #e8e0f5;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      background-image: radial-gradient(ellipse at 30% 20%, rgba(74,14,110,0.25) 0%, transparent 60%),
+                        radial-gradient(ellipse at 70% 80%, rgba(107,26,26,0.15) 0%, transparent 60%);
+    }
+
+    .box {
+      background: rgba(20,20,32,0.9);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      width: 100%; max-width: 360px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+    }
+
+    .logo {
+      font-size: 1.9rem; font-weight: 900; letter-spacing: -1px;
+      background: linear-gradient(135deg, #b06fcc, #e74c3c);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-align: center; margin-bottom: .4rem;
+    }
+
+    .subtitle {
+      text-align: center; color: #8a7fa0;
+      font-size: .85rem; margin-bottom: 2rem;
+    }
+
+    label {
+      display: block; font-size: .8rem;
+      color: #8a7fa0; margin-bottom: .35rem; margin-top: 1.1rem;
+      letter-spacing: .5px; text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px; padding: .65rem .9rem;
+      color: #e8e0f5; font-size: .95rem; outline: none;
+      transition: border .2s, background .2s;
+    }
+    input:focus {
+      border-color: #7b2d8b;
+      background: rgba(255,255,255,0.08);
+    }
+
+    .btn {
+      width: 100%; margin-top: 1.75rem;
+      background: linear-gradient(135deg, #7b2d8b, #5a1f6e);
+      border: none; border-radius: 8px;
+      color: #fff; font-size: 1rem; font-weight: 600;
+      padding: .75rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .9; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .erro {
+      margin-top: 1rem; padding: .6rem .9rem;
+      background: rgba(192,57,43,.15);
+      border: 1px solid rgba(192,57,43,.3);
+      border-radius: 6px; color: #e74c3c;
+      font-size: .85rem; display: none;
+    }
+  </style>
+</head>
+<body>
+<div class="box">
+  <div class="logo">🐙 LovecraFlix</div>
+  <div class="subtitle">Acervo pessoal de filmes e séries</div>
+
+  <form id="form">
+    <label>Email</label>
+    <input type="email" id="email" placeholder="seu@email.com" required autocomplete="username">
+
+    <label>Senha</label>
+    <input type="password" id="senha" placeholder="••••••••" required autocomplete="current-password">
+
+    <button class="btn" type="submit">Entrar</button>
+    <div class="erro" id="erro"></div>
+  </form>
+</div>
+
+<script>
+document.getElementById("form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const erro  = document.getElementById("erro");
+  erro.style.display = "none";
+
+  const r = await fetch("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: document.getElementById("email").value,
+      senha: document.getElementById("senha").value
+    })
+  });
+
+  if (r.ok) {
+    const data = await r.json();
+    localStorage.setItem("lc_token", data.token);
+    localStorage.setItem("lc_nome",  data.nome);
+    location.href = "/";
+  } else {
+    erro.textContent = "Email ou senha incorretos.";
+    erro.style.display = "block";
+  }
+});
+
+// Se já tem token válido, vai direto pro início
+if (localStorage.getItem("lc_token")) location.href = "/";
+</script>
+</body>
+</html>

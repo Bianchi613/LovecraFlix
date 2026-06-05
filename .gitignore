@@ -1,0 +1,22 @@
+# Config pessoal (caminhos da sua máquina)
+config.json
+
+# Banco de dados (dados pessoais)
+*.db
+*.sqlite
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+venv/
+.venv/
+
+# ffmpeg local
+C:/ffmpeg/
+
+# OS
+.DS_Store
+Thumbs.db

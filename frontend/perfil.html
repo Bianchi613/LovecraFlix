@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix — Perfil</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <style>
+    .perfil-page {
+      max-width: 860px; margin: 0 auto; padding: 2.5rem 2rem 4rem;
+    }
+    .perfil-page h1 {
+      font-size: 1.6rem; font-weight: 800; margin-bottom: 2rem;
+      border-bottom: 1px solid rgba(255,255,255,.07); padding-bottom: 1rem;
+    }
+
+    /* Avatar atual */
+    .avatar-atual {
+      display: flex; align-items: center; gap: 1.75rem; margin-bottom: 2.5rem;
+    }
+    .avatar-display {
+      width: 90px; height: 90px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 3rem; border: 3px solid var(--accent);
+      box-shadow: 0 0 20px rgba(123,45,139,.5);
+      flex-shrink: 0;
+    }
+    .avatar-display-info h2 { font-size: 1.3rem; margin-bottom: .25rem; }
+    .avatar-display-info p  { color: var(--muted); font-size: .88rem; }
+
+    /* Grid de avatares */
+    .avatar-section-title {
+      font-size: .75rem; letter-spacing: 2px; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 1rem;
+    }
+    .avatar-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: .85rem; margin-bottom: 2.5rem;
+    }
+    .avatar-opt {
+      display: flex; flex-direction: column; align-items: center; gap: .4rem;
+      cursor: pointer;
+    }
+    .avatar-opt .av {
+      width: 72px; height: 72px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 2.2rem;
+      border: 2px solid rgba(255,255,255,.08);
+      transition: transform .18s, border-color .18s, box-shadow .18s;
+    }
+    .avatar-opt:hover .av {
+      transform: scale(1.1);
+      border-color: var(--accent);
+      box-shadow: 0 0 14px rgba(123,45,139,.5);
+    }
+    .avatar-opt.selected .av {
+      border-color: var(--accent);
+      box-shadow: 0 0 18px rgba(123,45,139,.7);
+      transform: scale(1.08);
+    }
+    .avatar-opt .av-label {
+      font-size: .7rem; color: var(--muted); text-align: center;
+    }
+    .avatar-opt.selected .av-label { color: #c084e0; }
+
+    /* Campo nome */
+    .nome-section { margin-bottom: 2rem; }
+    .nome-section label {
+      display: block; font-size: .78rem; text-transform: uppercase;
+      letter-spacing: .5px; color: var(--muted); margin-bottom: .5rem;
+    }
+    .nome-section input {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: .65rem 1rem;
+      color: var(--text); font-size: 1rem; outline: none;
+      width: 100%; max-width: 360px;
+      transition: border .2s;
+    }
+    .nome-section input:focus { border-color: var(--accent); }
+
+    /* Botão salvar */
+    .btn-salvar {
+      background: linear-gradient(135deg, #7b2d8b, #5a1f6e);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: .95rem; font-weight: 700;
+      padding: .75rem 2rem; cursor: pointer;
+      transition: opacity .2s, transform .1s;
+      box-shadow: 0 4px 16px rgba(123,45,139,.4);
+    }
+    .btn-salvar:hover { opacity: .9; transform: translateY(-1px); }
+
+    .msg-ok {
+      display: inline-block; margin-left: 1rem;
+      color: #2ecc71; font-size: .88rem; opacity: 0;
+      transition: opacity .3s;
+    }
+    .msg-ok.show { opacity: 1; }
+  </style>
+</head>
+<script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
+<body>
+<header>
+  <a class="logo" href="/">🐙 LovecraFlix</a>
+</header>
+
+<div class="perfil-page">
+  <h1>Editar Perfil</h1>
+
+  <div class="avatar-atual">
+    <div class="avatar-display" id="av-display" style="background: #1a1a2e"></div>
+    <div class="avatar-display-info">
+      <h2 id="av-nome-display">…</h2>
+      <p id="av-email-display">…</p>
+    </div>
+  </div>
+
+  <div class="nome-section">
+    <label>Nome</label>
+    <input type="text" id="inp-nome" placeholder="Seu nome">
+  </div>
+
+  <div class="avatar-section-title">Escolha seu avatar</div>
+  <div class="avatar-grid" id="avatar-grid"></div>
+
+  <button class="btn-salvar" onclick="salvar()">Salvar alterações</button>
+  <span class="msg-ok" id="msg-ok">✓ Salvo!</span>
+</div>
+
+<script>
+const AVATARES = [
+  { id: "octopus",    emoji: "🐙", label: "Cthulhu",      bg: "#1a0d2e" },
+  { id: "skull",      emoji: "💀", label: "Caveira",       bg: "#1a0a0a" },
+  { id: "eye",        emoji: "👁️", label: "O Observador",  bg: "#0a1a2e" },
+  { id: "ghost",      emoji: "👻", label: "Fantasma",      bg: "#111128" },
+  { id: "bat",        emoji: "🦇", label: "Vampiro",       bg: "#0d0d1a" },
+  { id: "moon",       emoji: "🌕", label: "Lua Cheia",     bg: "#1a1500" },
+  { id: "spider",     emoji: "🕷️", label: "Aranha",        bg: "#150a0a" },
+  { id: "wolf",       emoji: "🐺", label: "Lobisomem",     bg: "#0a0f1a" },
+  { id: "alien",      emoji: "👽", label: "Alienígena",    bg: "#001a15" },
+  { id: "crystal",    emoji: "🔮", label: "Orbe",          bg: "#150a2e" },
+  { id: "fire",       emoji: "🔥", label: "Chama",         bg: "#1a0800" },
+  { id: "snake",      emoji: "🐍", label: "Serpente",      bg: "#051a05" },
+  { id: "vampire",    emoji: "🧛", label: "Drácula",       bg: "#1a0010" },
+  { id: "zombie",     emoji: "🧟", label: "Zumbi",         bg: "#0a1a0a" },
+  { id: "witch",      emoji: "🧙", label: "Feiticeiro",    bg: "#1a0d00" },
+  { id: "demon",      emoji: "😈", label: "Demônio",       bg: "#1a0005" },
+  { id: "star",       emoji: "⭐", label: "Estrela",       bg: "#0a0a1a" },
+  { id: "book",       emoji: "📖", label: "Necronomicon",  bg: "#1a1000" },
+];
+
+let avatarSelecionado = "octopus";
+
+function renderGrid(atual) {
+  const grid = document.getElementById("avatar-grid");
+  grid.innerHTML = "";
+  AVATARES.forEach(av => {
+    const div = document.createElement("div");
+    div.className = "avatar-opt" + (av.id === atual ? " selected" : "");
+    div.onclick = () => {
+      avatarSelecionado = av.id;
+      document.querySelectorAll(".avatar-opt").forEach(d => d.classList.remove("selected"));
+      div.classList.add("selected");
+      atualizarDisplay(av);
+    };
+    div.innerHTML = `
+      <div class="av" style="background:${av.bg}">${av.emoji}</div>
+      <span class="av-label">${av.label}</span>`;
+    grid.appendChild(div);
+  });
+}
+
+function atualizarDisplay(av) {
+  const el = document.getElementById("av-display");
+  el.textContent = av.emoji;
+  el.style.background = av.bg;
+}
+
+async function salvar() {
+  const token = localStorage.getItem("lc_token");
+  const nome  = document.getElementById("inp-nome").value.trim();
+  const r = await fetch("/api/perfil", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+    body: JSON.stringify({ nome: nome || undefined, avatar: avatarSelecionado })
+  });
+  if (r.ok) {
+    const data = await r.json();
+    localStorage.setItem("lc_nome", data.nome);
+    localStorage.setItem("lc_avatar", data.avatar);
+    document.getElementById("av-nome-display").textContent = data.nome;
+    const msg = document.getElementById("msg-ok");
+    msg.classList.add("show");
+    setTimeout(() => msg.classList.remove("show"), 2500);
+  }
+}
+
+async function init() {
+  const token = localStorage.getItem("lc_token");
+  const r = await fetch("/auth/me", { headers: { "Authorization": `Bearer ${token}` } });
+  if (!r.ok) { location.href = "/home"; return; }
+  const u = await r.json();
+
+  avatarSelecionado = u.avatar || "octopus";
+  const av = AVATARES.find(a => a.id === avatarSelecionado) || AVATARES[0];
+
+  document.getElementById("inp-nome").value    = u.nome;
+  document.getElementById("av-nome-display").textContent  = u.nome;
+  document.getElementById("av-email-display").textContent = u.email;
+  atualizarDisplay(av);
+  renderGrid(avatarSelecionado);
+}
+
+init();
+</script>
+</body>
+</html>

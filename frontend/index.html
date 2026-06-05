@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LovecraFlix</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<header>
+  <span class="logo">🐙 LovecraFlix</span>
+  <input class="search-bar" type="search" id="busca" placeholder="Buscar filmes...">
+  <select id="tipo-filter">
+    <option value="">Tudo</option>
+    <option value="filme">Filmes</option>
+    <option value="serie">Séries</option>
+    <option value="documentario">Documentários</option>
+  </select>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:.75rem">
+    <a href="/perfil" id="user-avatar" class="user-avatar-btn" title="Editar perfil">🐙</a>
+    <span id="user-nome" style="font-size:.85rem;color:#8a7fa0"></span>
+    <button onclick="logout()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#8a7fa0;cursor:pointer;font-size:.82rem;padding:.35rem .8rem;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.13)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">Sair</button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <h3>Gêneros</h3>
+    <button class="genre-btn active" data-genero="">Todos <span class="count" id="count-total"></span></button>
+    <div id="generos-list"></div>
+  </aside>
+
+  <main>
+    <div class="section-title" id="section-title">Todos os filmes</div>
+    <div class="grid" id="grid"></div>
+    <div class="no-results" id="no-results" style="display:none">Nenhum filme encontrado</div>
+  </main>
+</div>
+
+<script>
+// Verificar autenticação
+const token = localStorage.getItem("lc_token");
+const nome  = localStorage.getItem("lc_nome");
+const avatarId = localStorage.getItem("lc_avatar") || "octopus";
+if (!token) location.href = "/home";
+document.getElementById("user-nome").textContent = nome ? `Olá, ${nome}` : "";
+
+// Avatares definidos
+const AVATARES_MAP = {
+  octopus:"🐙",skull:"💀",eye:"👁️",ghost:"👻",bat:"🦇",moon:"🌕",
+  spider:"🕷️",wolf:"🐺",alien:"👽",crystal:"🔮",fire:"🔥",snake:"🐍",
+  vampire:"🧛",zombie:"🧟",witch:"🧙",demon:"😈",star:"⭐",book:"📖"
+};
+const BGRND_MAP = {
+  octopus:"#1a0d2e",skull:"#1a0a0a",eye:"#0a1a2e",ghost:"#111128",
+  bat:"#0d0d1a",moon:"#1a1500",spider:"#150a0a",wolf:"#0a0f1a",
+  alien:"#001a15",crystal:"#150a2e",fire:"#1a0800",snake:"#051a05",
+  vampire:"#1a0010",zombie:"#0a1a0a",witch:"#1a0d00",demon:"#1a0005",
+  star:"#0a0a1a",book:"#1a1000"
+};
+const avEl = document.getElementById("user-avatar");
+avEl.textContent = AVATARES_MAP[avatarId] || "🐙";
+avEl.style.background = BGRND_MAP[avatarId] || "#1a1a2e";
+
+function logout() {
+  localStorage.removeItem("lc_token");
+  localStorage.removeItem("lc_nome");
+  location.href = "/login";
+}
+</script>
+<script src="/static/app.js"></script>
+</body>
+</html>
