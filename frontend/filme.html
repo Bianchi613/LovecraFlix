@@ -83,25 +83,44 @@ async function load() {
     </div>`;
 
   // Lista de versões
-  const lista = document.getElementById("versoes-lista");
-  lista.innerHTML = `<h2>Escolha a versão</h2>`;
+  // Detecta se são partes do mesmo filme (mesmo idioma, padrão [N] no nome)
+  const temPartes = versoes.every(v => v.idioma === versoes[0].idioma) &&
+    versoes.some(v => /\[\d+\]/.test(v.arquivo_novo));
 
-  for (const v of versoes) {
-    const fname = v.arquivo_novo.replace(/\\/g, "/").split("/").pop();
-    const leg   = v.tem_legenda ? `<span class="versao-leg">📝 Legenda</span>` : "";
-    const icon  = (v.idioma || "").toLowerCase().includes("port") ? "🇧🇷" : "🎬";
+  // Ordena: arquivo sem [N] é Parte 1, [1]=Parte 2, [2]=Parte 3...
+  const versoesSorted = [...versoes].sort((a, b) => {
+    const na = (a.arquivo_novo.match(/\[(\d+)\]/) || [, "0"])[1];
+    const nb = (b.arquivo_novo.match(/\[(\d+)\]/) || [, "0"])[1];
+    return parseInt(na) - parseInt(nb);
+  });
+
+  const lista = document.getElementById("versoes-lista");
+  lista.innerHTML = `<h2>${temPartes ? "Partes do filme" : "Escolha a versão"}</h2>`;
+
+  versoesSorted.forEach((v, i) => {
+    const fname  = v.arquivo_novo.replace(/\\/g, "/").split("/").pop();
+    const leg    = v.tem_legenda ? `<span class="versao-leg">📝 Legenda</span>` : "";
+    const icon   = temPartes ? `🎬` : ((v.idioma || "").toLowerCase().includes("port") ? "🇧🇷" : "🎬");
+    const rotulo = temPartes ? `Parte ${i + 1}` : (v.idioma || "Desconhecido");
+
+    // Passa próxima parte para auto-play
+    const proxima = versoesSorted[i + 1];
+    const nextParam = proxima
+      ? `&next_id=${proxima.id}&next_titulo=${encodeURIComponent("Parte " + (i + 2))}`
+      : "";
+
     const item  = document.createElement("div");
     item.className = "versao-item";
-    item.onclick   = () => location.href = `/player?id=${v.id}`;
+    item.onclick   = () => location.href = `/player?id=${v.id}${nextParam}`;
     item.innerHTML = `
       <span class="versao-icon">${icon}</span>
       <div class="versao-info">
-        <div class="versao-idioma">${v.idioma || "Desconhecido"}</div>
+        <div class="versao-idioma">${rotulo}</div>
         <div class="versao-arquivo">${fname}</div>
       </div>
       ${leg}`;
     lista.appendChild(item);
-  }
+  });
 }
 
 load();

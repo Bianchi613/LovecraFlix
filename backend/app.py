@@ -485,13 +485,15 @@ def open_vlc(path: str):
 @app.get("/api/filmes/versoes")
 def versoes_filme(titulo: str):
     conn = get_db()
+    # Busca pelo título exato E títulos que são partes do mesmo filme
     rows = conn.execute("""
         SELECT DISTINCT id, titulo_pt, titulo_original, ano, genero, idioma,
                tem_legenda, sinopse, poster_local, arquivo_novo, tmdb_url, subgenero
         FROM filmes
-        WHERE titulo_pt = ? AND arquivo_novo IS NOT NULL AND tipo != 'serie'
-        ORDER BY idioma, arquivo_novo
-    """, (titulo,)).fetchall()
+        WHERE (titulo_pt = ? OR titulo_pt LIKE ?)
+          AND arquivo_novo IS NOT NULL AND tipo != 'serie'
+        ORDER BY arquivo_novo
+    """, (titulo, titulo + " - Parte %")).fetchall()
     conn.close()
     seen = set()
     result = []
