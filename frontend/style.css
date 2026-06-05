@@ -302,6 +302,21 @@ main { flex: 1; padding: 1.5rem 2rem; }
 }
 .stars-saved.show { opacity: 1; }
 
+/* ── Seletor de faixa de áudio ── */
+.audio-btn {
+  background: rgba(255,255,255,.07);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 6px; color: var(--muted);
+  cursor: pointer; font-size: .82rem;
+  padding: .35rem .85rem;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.audio-btn:hover { background: rgba(255,255,255,.13); color: var(--text); }
+.audio-btn.active {
+  background: rgba(123,45,139,.3);
+  border-color: var(--accent); color: #fff;
+}
+
 /* ── User avatar button ── */
 .user-avatar-btn {
   width: 34px; height: 34px; border-radius: 50%;

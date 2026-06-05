@@ -117,6 +117,30 @@ const nextId     = params.get("next_id") ? parseInt(params.get("next_id")) : nul
 const nextTitulo = params.get("next_titulo") || "Próximo episódio";
 const autoplay   = params.get("autoplay") === "1";
 
+let audioAtual    = 0;   // faixa de áudio activa
+let arquivoAtual  = "";
+let needsTranscode = false;
+
+function trocarAudio(faixa) {
+  audioAtual = faixa;
+  const video    = document.getElementById("player");
+  const tempo    = video.currentTime;
+  const pausado  = video.paused;
+
+  // Força transcodificação com a faixa escolhida
+  video.src = `/transcode?path=${encodeURIComponent(arquivoAtual)}&audio_track=${faixa}`;
+  video.load();
+  video.addEventListener("canplay", () => {
+    video.currentTime = tempo;
+    if (!pausado) video.play();
+  }, { once: true });
+
+  // Atualiza visual dos botões
+  document.querySelectorAll(".audio-btn").forEach(b => {
+    b.classList.toggle("active", parseInt(b.dataset.faixa) === faixa);
+  });
+}
+
 let countdownTimer = null;
 let countdownVal   = 10;
 
@@ -175,8 +199,11 @@ async function load() {
   const video = document.getElementById("player");
   if (f.poster_local) video.poster = `/poster?path=${encodeURIComponent(f.poster_local)}`;
 
+  arquivoAtual   = f.arquivo_novo || "";
+  needsTranscode = f.needs_transcode;
+
   if (f.arquivo_novo) {
-    const transcodeSrc = `/transcode?path=${encodeURIComponent(f.arquivo_novo)}`;
+    const transcodeSrc = `/transcode?path=${encodeURIComponent(f.arquivo_novo)}&audio_track=0`;
     const directSrc    = `/video?path=${encodeURIComponent(f.arquivo_novo)}`;
     video.src = f.needs_transcode ? transcodeSrc : directSrc;
 
@@ -253,6 +280,12 @@ async function load() {
       ${f.tmdb_url ? `<a href="${f.tmdb_url}" target="_blank" class="tmdb-link">TMDB ↗</a>` : ""}
     </div>
     ${f.sinopse ? `<p class="player-synopsis">${f.sinopse}</p>` : ""}
+    ${(f.idioma || "").toLowerCase().includes("dual") ? `
+    <div style="display:flex;align-items:center;gap:.6rem;margin-top:1rem">
+      <span style="font-size:.82rem;color:var(--muted)">Áudio:</span>
+      <button class="audio-btn active" data-faixa="0" onclick="trocarAudio(0)">🇧🇷 Português</button>
+      <button class="audio-btn"        data-faixa="1" onclick="trocarAudio(1)">🇬🇧 Original</button>
+    </div>` : ""}
   `;
 
   // Carrega avaliação do usuário

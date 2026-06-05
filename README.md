@@ -10,7 +10,7 @@ O LovecraFlix **não é um serviço online** — ele roda na **sua própria máq
 
 ### O que você precisa ter antes de instalar
 
-1. **Uma pasta com seus filmes** organizada em subpastas por gênero, por exemplo:
+1. **Uma pasta com seus filmes** organizada em subpastas por gênero:
    ```
    E:\Filmes\
    ├── Terror\
@@ -19,16 +19,16 @@ O LovecraFlix **não é um serviço online** — ele roda na **sua própria máq
    │   │   └── O Exorcista (1973).jpg     ← poster (opcional)
    │   └── ...
    ├── Ficcao Cientifica\
-   ├── Comedia\
-   └── Series\
-       └── Fringe\
-           ├── Fringe.S01E01.mkv
-           └── Fringe.S01E02.mkv
+   ├── Series\
+   │   └── Fringe\
+   │       ├── Fringe.S01E01.mkv
+   │       └── Fringe.S01E02.mkv
+   └── Documentario\
    ```
 
-2. **Um banco de dados SQLite** (`acervo.db`) com os metadados dos seus filmes (títulos, sinopses, gêneros, caminhos dos arquivos). O LovecraFlix lê esse banco — ele não varre a pasta automaticamente.
+2. **Um banco de dados SQLite** (`acervo.db`) com os metadados dos seus filmes. O `setup.py` cria um banco vazio com o schema correto — você precisará populá-lo com seus filmes.
 
-> Se você não tem o banco ainda, o `setup.py` cria um banco **vazio** com o schema correto. Você precisará popular ele com seus filmes (manualmente ou com um script organizador separado).
+> Filmes com múltiplas versões do mesmo idioma podem ter `[1]`, `[2]` no nome do arquivo — serão exibidos como versões alternativas. Para filmes divididos em partes fisicamente, use o campo `parte` no banco (veja abaixo).
 
 ---
 
@@ -37,7 +37,7 @@ O LovecraFlix **não é um serviço online** — ele roda na **sua própria máq
 ### 1. Pré-requisitos
 
 - **Python 3.10+** → [python.org](https://python.org)
-- **ffmpeg** → necessário para tocar H.265, AC3, AVI e outros formatos incompatíveis com o browser
+- **ffmpeg** → necessário para transcodificação automática e troca de faixa de áudio
   ```
   winget install Gyan.FFmpeg
   ```
@@ -45,7 +45,7 @@ O LovecraFlix **não é um serviço online** — ele roda na **sua própria máq
 ### 2. Clone o repositório
 
 ```bash
-git clone https://github.com/seu-usuario/LovecraftianFlix.git
+git clone https://github.com/Bianchi613/LovecraFlix.git
 cd LovecraftianFlix
 ```
 
@@ -62,22 +62,36 @@ cd backend
 python setup.py
 ```
 
-O setup vai perguntar:
-- **Pasta de filmes** — onde seus vídeos estão (ex: `E:\Filmes`)
-- **Caminho do banco** — onde salvar o `acervo.db` (padrão: dentro da pasta de filmes)
-- **Porta** — padrão `8000`
-- **Usuário** — nome, email e senha para o login
+O setup pergunta onde estão seus filmes, onde salvar o banco, a porta e cria seu usuário.
 
 ### 5. Inicie o servidor
 
-Clique duas vezes em **`iniciar.bat`** (Windows) ou:
+Clique duas vezes em **`iniciar.bat`** ou:
 
 ```bash
 cd backend
 python app.py
 ```
 
-Acesse **`http://localhost:8000`** no browser.
+Acesse **`http://localhost:8000`**.
+
+---
+
+## Funcionalidades
+
+- **Home page** com grade de posters reais, carrossel em destaque e frases de Lovecraft rotativas
+- **Autenticação** com login, cadastro e perfil com 18 avatares temáticos
+- **Filmes** agrupados por título — múltiplas versões (PT/EN) com página de seleção
+- **Filmes com partes** — marcação explícita no banco via campo `parte`, com auto-play entre partes
+- **Troca de faixa de áudio** — filmes "Dual (PT + original)" têm botão PT/EN no player
+- **Séries** agrupadas por pasta, episódios por temporada, navegação por idioma
+- **Documentários** agrupados em coleções (ex: BBC) com lista de episódios
+- **Filtros** por tipo e gênero incluindo 🐙 Horror Cósmico
+- **Player** full-width com thumbnail do poster, legendas automáticas (.srt → WebVTT)
+- **Auto-play** de próximo episódio com contagem regressiva de 10s
+- **Recomendações** ao terminar conteúdo, personalizadas pelo histórico de avaliações
+- **Avaliação por estrelas** (1–5) por filme, com média geral exibida
+- **Transcodificação automática** via ffmpeg — H.265, AC3, DTS, AVI e outros
 
 ---
 
@@ -86,87 +100,77 @@ Acesse **`http://localhost:8000`** no browser.
 ```
 LovecraftianFlix/
 ├── backend/
-│   ├── app.py              # Servidor FastAPI — toda a lógica de API e streaming
+│   ├── app.py              # Servidor FastAPI
 │   ├── setup.py            # Configuração inicial (execute uma vez)
 │   ├── converter.py        # Conversão em lote de arquivos incompatíveis
 │   ├── criar_usuario.py    # Adicionar/atualizar usuários via terminal
 │   └── requirements.txt
 ├── frontend/
-│   ├── home.html           # Landing page (pré-login)
-│   ├── login.html          # Tela de login
-│   ├── cadastro.html       # Tela de cadastro
-│   ├── perfil.html         # Edição de perfil e avatar
-│   ├── index.html          # Grade principal de filmes/séries
+│   ├── home.html           # Landing page
+│   ├── login.html / cadastro.html / perfil.html
+│   ├── index.html          # Grade principal
 │   ├── player.html         # Player de vídeo
-│   ├── filme.html          # Seleção de versão de um filme
-│   ├── series.html         # Episódios de uma série
-│   ├── documentario.html   # Episódios de uma coleção de documentários
-│   ├── app.js              # Lógica da interface principal
+│   ├── filme.html          # Seleção de versão/parte
+│   ├── series.html         # Episódios de série
+│   ├── documentario.html   # Episódios de documentário
+│   ├── app.js
 │   └── style.css
-├── config.json             # Criado pelo setup — caminhos e configurações
-├── iniciar.bat             # Atalho Windows (detecta primeiro uso automaticamente)
+├── config.json             # Criado pelo setup (caminhos e porta)
+├── config.example.json     # Modelo de configuração
+├── iniciar.bat             # Atalho Windows
 └── README.md
 ```
 
 ---
 
-## Funcionalidades
-
-- **Home page** com grade de posters reais, carrossel em destaque e frases de Lovecraft
-- **Autenticação** com login, cadastro e perfil com avatar customizável (18 avatares temáticos)
-- **Filmes** agrupados por título — múltiplas versões (PT/EN) com página de seleção
-- **Séries** agrupadas por pasta com episódios organizados por temporada e idioma
-- **Documentários** agrupados em coleções (ex: BBC) com lista de episódios
-- **Filtros** por tipo (Filmes / Séries / Documentários) e gênero incluindo 🐙 Horror Cósmico
-- **Player** full-width com thumbnail do poster e legendas automáticas (.srt → WebVTT)
-- **Transcodificação automática** — detecta codec via ffprobe e converte H.265, AC3, DTS etc. em tempo real
-
----
-
 ## Banco de dados
-
-O `acervo.db` é um SQLite com duas tabelas:
 
 ### Tabela `filmes`
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `id` | INTEGER | Identificador único |
 | `titulo_pt` | TEXT | Título em português |
 | `titulo_original` | TEXT | Título original |
-| `ano` | INTEGER | Ano de lançamento |
-| `genero` | TEXT | Gênero principal (ex: `Terror`, `Ficcao Cientifica`) |
+| `ano` | INTEGER | Ano |
+| `genero` | TEXT | Gênero (ex: `Terror`, `Ficcao Cientifica`) |
 | `subgenero` | TEXT | Subgênero (ex: `Horror Cosmico`) |
 | `tipo` | TEXT | `filme`, `serie` ou `documentario` |
-| `idioma` | TEXT | Idioma do áudio |
-| `tem_legenda` | INTEGER | `1` se houver `.srt` junto ao arquivo |
-| `arquivo_novo` | TEXT | Caminho absoluto para o arquivo de vídeo |
-| `poster_local` | TEXT | Caminho absoluto para o `.jpg` do poster |
-| `sinopse` | TEXT | Descrição do filme |
-| `tmdb_url` | TEXT | Link para o TMDB |
+| `idioma` | TEXT | Idioma do áudio (ex: `Dual (PT + original)`) |
+| `parte` | INTEGER | Parte do filme — `NULL` para filmes normais, `1`, `2`... para filmes divididos |
+| `tem_legenda` | INTEGER | `1` se houver `.srt` junto |
+| `arquivo_novo` | TEXT | Caminho absoluto para o vídeo |
+| `poster_local` | TEXT | Caminho absoluto para o `.jpg` |
+| `sinopse` | TEXT | Sinopse |
+| `tmdb_url` | TEXT | Link TMDB |
 
-### Tabela `usuarios` (criada automaticamente pelo setup)
+### Tabela `usuarios`
 
 | Campo | Tipo | Descrição |
 |---|---|---|
-| `id` | INTEGER | Identificador único |
 | `nome` | TEXT | Nome de exibição |
-| `email` | TEXT | Email único (usado no login) |
+| `email` | TEXT | Email (usado no login) |
 | `senha_hash` | TEXT | Senha com bcrypt |
 | `avatar` | TEXT | ID do avatar (ex: `octopus`) |
+
+### Tabela `avaliacoes`
+
+| Campo | Tipo | Descrição |
+|---|---|---|
+| `usuario_id` | INTEGER | FK para usuarios |
+| `filme_id` | INTEGER | FK para filmes |
+| `nota` | INTEGER | Nota de 1 a 5 |
 
 ---
 
 ## Compatibilidade de vídeo
 
-O player tenta reprodução direta e, se o codec for incompatível, transcodifica via ffmpeg automaticamente:
-
 | Formato | Comportamento |
 |---|---|
-| MP4/MKV com H.264 + AAC | Direto — sem processamento extra |
+| MP4/MKV com H.264 + AAC | Direto |
 | MKV com H.264 + AC3/DTS | Só áudio convertido → AAC |
 | MP4/MKV com H.265/HEVC | Vídeo transcodificado → H.264 |
-| AVI, MPEG-2, XviD | Tudo transcodificado via ffmpeg ultrafast |
+| AVI, MPEG-2, XviD | Tudo transcodificado |
+| Dual audio | Botão PT/EN no player para trocar faixa |
 
 > Sem ffmpeg instalado, apenas H.264 + AAC/MP3 funcionam.
 
@@ -177,21 +181,20 @@ O player tenta reprodução direta e, se o codec for incompatível, transcodific
 | Endpoint | Descrição |
 |---|---|
 | `GET /api/filmes` | Lista filmes (filtros: `genero`, `busca`, `tipo`) |
+| `GET /api/filmes/versoes` | Versões/partes de um filme por título |
 | `GET /api/series` | Séries agrupadas por pasta |
 | `GET /api/colecoes` | Coleções de documentários |
 | `GET /api/generos` | Gêneros com contagem |
-| `GET /video?path=` | Streaming direto com Range requests |
-| `GET /transcode?path=` | Streaming via ffmpeg |
-| `GET /poster?path=` | Serve imagem de poster |
-| `GET /subtitle?path=` | Serve legenda SRT → WebVTT |
+| `GET /api/recomendacoes` | Sugestões personalizadas por avaliações |
+| `GET /video?path=` | Streaming direto com Range |
+| `GET /transcode?path=&audio_track=` | Streaming via ffmpeg (faixa de áudio opcional) |
+| `POST /api/avaliar` | Salva avaliação (1–5 estrelas) |
+| `PUT /api/filmes/{id}/parte` | Marca um arquivo como parte N de um filme |
 | `POST /auth/login` | Login → JWT |
-| `PUT /api/perfil` | Atualiza nome e avatar |
 
 ---
 
 ## Gerenciar usuários
-
-Para adicionar ou alterar a senha de um usuário:
 
 ```bash
 cd backend

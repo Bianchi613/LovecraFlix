@@ -42,6 +42,12 @@ def get_db():
             avatar TEXT DEFAULT 'octopus'
         )
     """)
+    # Migração: adiciona coluna parte se não existir
+    colunas = [r[1] for r in conn.execute("PRAGMA table_info(filmes)").fetchall()]
+    if "parte" not in colunas:
+        conn.execute("ALTER TABLE filmes ADD COLUMN parte INTEGER DEFAULT NULL")
+        conn.commit()
+
     conn.execute("""
         CREATE TABLE IF NOT EXISTS avaliacoes (
             id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -485,15 +491,13 @@ def open_vlc(path: str):
 @app.get("/api/filmes/versoes")
 def versoes_filme(titulo: str):
     conn = get_db()
-    # Busca pelo título exato E títulos que são partes do mesmo filme
     rows = conn.execute("""
         SELECT DISTINCT id, titulo_pt, titulo_original, ano, genero, idioma,
-               tem_legenda, sinopse, poster_local, arquivo_novo, tmdb_url, subgenero
+               tem_legenda, sinopse, poster_local, arquivo_novo, tmdb_url, subgenero, parte
         FROM filmes
-        WHERE (titulo_pt = ? OR titulo_pt LIKE ?)
-          AND arquivo_novo IS NOT NULL AND tipo != 'serie'
-        ORDER BY arquivo_novo
-    """, (titulo, titulo + " - Parte %")).fetchall()
+        WHERE titulo_pt = ? AND arquivo_novo IS NOT NULL AND tipo != 'serie'
+        ORDER BY COALESCE(parte, 0), idioma, arquivo_novo
+    """, (titulo,)).fetchall()
     conn.close()
     seen = set()
     result = []
@@ -502,6 +506,16 @@ def versoes_filme(titulo: str):
             seen.add(r["arquivo_novo"])
             result.append(dict(r))
     return result
+
+
+@app.put("/api/filmes/{id}/parte")
+def set_parte(id: int, dados: dict, token: str = Depends(verificar_token)):
+    parte = dados.get("parte")  # None para limpar, 1/2/3... para marcar
+    conn = get_db()
+    conn.execute("UPDATE filmes SET parte = ? WHERE id = ?", (parte, id))
+    conn.commit()
+    conn.close()
+    return {"ok": True}
 
 
 @app.get("/api/filmes/nav")
@@ -692,7 +706,7 @@ async def stream_video(request: Request, path: str):
 
 
 @app.get("/transcode")
-async def transcode_video(path: str):
+async def transcode_video(path: str, audio_track: int = 0):
     import shutil
     p = Path(path)
     if not p.exists():
@@ -727,6 +741,7 @@ async def transcode_video(path: str):
 
     cmd = [
         ffmpeg_bin, "-i", str(p),
+        "-map", "0:v:0", "-map", f"0:a:{audio_track}",
         "-c:v", vc, *extra_v,
         "-c:a", ac, *extra_a,
         "-f", "mp4", "-movflags", "frag_keyframe+empty_moov",
