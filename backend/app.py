@@ -509,6 +509,48 @@ def detalhe_filme(id: int):
     return data
 
 
+@app.get("/api/recomendacoes")
+def recomendacoes(id: int):
+    conn = get_db()
+    origem = conn.execute("SELECT genero, tipo FROM filmes WHERE id=?", (id,)).fetchone()
+    genero = origem["genero"] if origem else None
+
+    # Filmes do mesmo gênero (excluindo o atual)
+    filmes = conn.execute("""
+        SELECT DISTINCT f.id, f.titulo_pt, f.genero, f.ano, f.tipo,
+               CASE WHEN f.poster_local NOT LIKE '%_organizer%' THEN f.poster_local ELSE NULL END as poster_local
+        FROM filmes f
+        WHERE f.arquivo_novo IS NOT NULL AND f.tipo NOT IN ('serie','documentario')
+          AND f.id != ? AND (f.genero = ? OR ? IS NULL)
+        GROUP BY f.titulo_pt
+        ORDER BY RANDOM() LIMIT 4
+    """, (id, genero, genero)).fetchall()
+
+    # Séries aleatórias
+    series = conn.execute("""
+        SELECT titulo_pt, genero, poster_local,
+               MIN(id) as id,
+               SUBSTR(arquivo_novo, 1, LENGTH(arquivo_novo) - LENGTH(arquivo_novo) - 1) as pasta
+        FROM filmes
+        WHERE tipo = 'serie' AND arquivo_novo IS NOT NULL
+          AND poster_local IS NOT NULL AND poster_local NOT LIKE '%_organizer%'
+        GROUP BY titulo_pt
+        ORDER BY RANDOM() LIMIT 2
+    """).fetchall()
+    conn.close()
+
+    result = []
+    for f in filmes:
+        d = dict(f)
+        d["url"] = f"/filme?titulo={d['titulo_pt']}" if True else f"/player?id={d['id']}"
+        result.append(d)
+    for s in series:
+        d = dict(s)
+        d["url"] = f"/series?pasta={d.get('pasta','')}&nome={d['titulo_pt']}"
+        result.append(d)
+    return result
+
+
 # ── Mídia ──────────────────────────────────────────────────────────────────
 
 @app.get("/poster")

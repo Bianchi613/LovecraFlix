@@ -5,47 +5,172 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LovecraFlix — Player</title>
   <link rel="stylesheet" href="/static/style.css">
+  <style>
+    /* ── Overlay de fim ── */
+    .end-overlay {
+      display: none; position: absolute; inset: 0; z-index: 20;
+      background: rgba(5,5,12,0.92);
+      align-items: center; justify-content: center;
+      flex-direction: column; text-align: center; padding: 2rem;
+    }
+    .end-overlay.show { display: flex; }
+
+    /* Auto-play próximo episódio */
+    .autoplay-box {
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 12px; padding: 1.75rem 2.5rem;
+      max-width: 420px; width: 100%;
+    }
+    .autoplay-box .ap-label { color: var(--muted); font-size: .82rem; margin-bottom: .4rem; }
+    .autoplay-box .ap-titulo { font-size: 1.2rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .ap-counter {
+      font-size: 2.2rem; font-weight: 900; color: var(--accent);
+      margin-bottom: 1rem; font-variant-numeric: tabular-nums;
+    }
+    .ap-actions { display: flex; gap: .75rem; justify-content: center; }
+    .ap-btn {
+      border: none; border-radius: 8px; cursor: pointer;
+      font-size: .9rem; font-weight: 600; padding: .6rem 1.4rem;
+      transition: opacity .2s;
+    }
+    .ap-btn:hover { opacity: .85; }
+    .ap-btn.primary { background: var(--accent); color: #fff; }
+    .ap-btn.secondary {
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.15); color: var(--text);
+    }
+
+    /* Recomendações */
+    .rec-box { max-width: 800px; width: 100%; }
+    .rec-box h2 { font-size: 1.1rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .rec-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: .85rem;
+    }
+    .rec-card {
+      cursor: pointer; border-radius: 8px; overflow: hidden;
+      position: relative;
+      transition: transform .2s, box-shadow .2s;
+    }
+    .rec-card:hover { transform: translateY(-4px) scale(1.04); box-shadow: 0 12px 30px rgba(100,30,120,.5); }
+    .rec-card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; display: block; }
+    .rec-card .rc-fallback {
+      width: 100%; aspect-ratio: 2/3;
+      background: linear-gradient(160deg,#2a1f3d,#0a0a0f);
+      display: flex; align-items: center; justify-content: center; font-size: 2.5rem;
+    }
+    .rec-card .rc-info {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(to top, rgba(5,5,12,.95), transparent);
+      padding: 1.5rem .5rem .45rem;
+      font-size: .72rem; font-weight: 600; color: #f0eaff;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .rec-back-btn {
+      margin-top: 1.5rem; background: rgba(255,255,255,.07);
+      border: 1px solid rgba(255,255,255,.15); border-radius: 8px;
+      color: var(--text); cursor: pointer; font-size: .9rem;
+      padding: .6rem 1.5rem; transition: background .2s;
+    }
+    .rec-back-btn:hover { background: rgba(255,255,255,.13); }
+  </style>
 </head>
 <script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
 <body>
 
-<!-- Vídeo no topo, full-width -->
 <div class="player-wrap" id="player-wrap">
   <button class="player-back back-btn" onclick="history.back()">← Voltar</button>
   <video id="player" controls preload="metadata"></video>
+
+  <!-- Overlay fim de episódio (auto-play) -->
+  <div class="end-overlay" id="overlay-autoplay">
+    <div class="autoplay-box">
+      <div class="ap-label">Próximo episódio em</div>
+      <div class="ap-counter" id="ap-counter">10</div>
+      <div class="ap-titulo" id="ap-titulo"></div>
+      <div class="ap-actions">
+        <button class="ap-btn primary" onclick="irProximo()">▶ Assistir agora</button>
+        <button class="ap-btn secondary" onclick="cancelarAutoplay()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay fim de conteúdo (recomendações) -->
+  <div class="end-overlay" id="overlay-rec">
+    <div class="rec-box">
+      <h2>O que assistir agora?</h2>
+      <div class="rec-grid" id="rec-grid"></div>
+      <button class="rec-back-btn" onclick="history.back()">← Voltar ao catálogo</button>
+    </div>
+  </div>
 </div>
 
-<!-- Informações abaixo do vídeo -->
 <div class="player-info" id="player-info"></div>
 
 <script>
-const params   = new URLSearchParams(location.search);
-const filmeId  = parseInt(params.get("id"));
-let   vizinhos = { prev: null, next: null };
+const params     = new URLSearchParams(location.search);
+const filmeId    = parseInt(params.get("id"));
+const nextId     = params.get("next_id") ? parseInt(params.get("next_id")) : null;
+const nextTitulo = params.get("next_titulo") || "Próximo episódio";
+const autoplay   = params.get("autoplay") === "1";
 
-async function navegar(dir) {
-  const id = dir === -1 ? vizinhos.prev : vizinhos.next;
-  if (id) location.href = `/player?id=${id}`;
+let countdownTimer = null;
+let countdownVal   = 10;
+
+function irProximo() {
+  clearInterval(countdownTimer);
+  location.href = `/player?id=${nextId}&autoplay=1`;
+}
+
+function cancelarAutoplay() {
+  clearInterval(countdownTimer);
+  document.getElementById("overlay-autoplay").classList.remove("show");
+  document.getElementById("player").play();
+}
+
+function iniciarAutoplay() {
+  const overlay = document.getElementById("overlay-autoplay");
+  document.getElementById("ap-titulo").textContent = decodeURIComponent(nextTitulo);
+  overlay.classList.add("show");
+  countdownVal = 10;
+  document.getElementById("ap-counter").textContent = countdownVal;
+  countdownTimer = setInterval(() => {
+    countdownVal--;
+    document.getElementById("ap-counter").textContent = countdownVal;
+    if (countdownVal <= 0) irProximo();
+  }, 1000);
+}
+
+async function mostrarRecomendacoes() {
+  const r    = await fetch(`/api/recomendacoes?id=${filmeId}`);
+  const recs = await r.json();
+  const grid = document.getElementById("rec-grid");
+  grid.innerHTML = "";
+  recs.forEach(f => {
+    const card = document.createElement("div");
+    card.className = "rec-card";
+    card.onclick   = () => location.href = `/player?id=${f.id}`;
+    const poster = f.poster_local
+      ? `<img src="/poster?path=${encodeURIComponent(f.poster_local)}" loading="lazy">`
+      : `<div class="rc-fallback">🎬</div>`;
+    card.innerHTML = `${poster}<div class="rc-info">${f.titulo_pt || ""}</div>`;
+    grid.appendChild(card);
+  });
+  document.getElementById("overlay-rec").classList.add("show");
 }
 
 async function load() {
   if (!filmeId) return;
 
-  const [rFilme, rNav] = await Promise.all([
-    fetch(`/api/filmes/${filmeId}`),
-    fetch(`/api/filmes/nav?id=${filmeId}`)
-  ]);
-  const f   = await rFilme.json();
-  const nav = await rNav.json();
-  vizinhos  = nav;
+  const rFilme = await fetch(`/api/filmes/${filmeId}`);
+  const f = await rFilme.json();
 
   document.title = `${f.titulo_pt || f.titulo} — LovecraFlix`;
 
-  // Configura o vídeo
   const video = document.getElementById("player");
-  if (f.poster_local) {
-    video.poster = `/poster?path=${encodeURIComponent(f.poster_local)}`;
-  }
+  if (f.poster_local) video.poster = `/poster?path=${encodeURIComponent(f.poster_local)}`;
 
   if (f.arquivo_novo) {
     const transcodeSrc = `/transcode?path=${encodeURIComponent(f.arquivo_novo)}`;
@@ -53,12 +178,12 @@ async function load() {
     video.src = f.needs_transcode ? transcodeSrc : directSrc;
 
     video.addEventListener("error", () => {
-      if (video.src !== transcodeSrc) {
-        video.src = transcodeSrc;
-        video.load();
-        video.play();
-      }
+      if (video.src !== transcodeSrc) { video.src = transcodeSrc; video.load(); video.play(); }
     });
+
+    if (autoplay) {
+      video.addEventListener("canplay", () => video.play(), { once: true });
+    }
 
     if (f.tem_legenda) {
       const stem  = f.arquivo_novo.substring(0, f.arquivo_novo.lastIndexOf("."));
@@ -68,23 +193,52 @@ async function load() {
       track.src = `/subtitle?path=${encodeURIComponent(stem + ".srt")}`;
       video.appendChild(track);
     }
+
+    // Fim do vídeo
+    video.addEventListener("ended", () => {
+      if (nextId) {
+        iniciarAutoplay();
+      } else {
+        mostrarRecomendacoes();
+      }
+    });
   }
 
-  const btnPrev = "";
-  const btnNext = "";
-
-  // Badges
   const horrorBadge = f.subgenero === "Horror Cosmico"
     ? `<span class="tag horror">🐙 Horror Cósmico</span>` : "";
-  const legBadge = f.tem_legenda
-    ? `<span class="tag">📝 Legenda</span>` : "";
+  const legBadge = f.tem_legenda ? `<span class="tag">📝 Legenda</span>` : "";
 
-  // Info section
+  // Para séries: extrai número e título do episódio a partir do nome do arquivo
+  let epLabel = "";
+  let epTitulo = "";
+  if (f.tipo === "serie" && f.arquivo_novo) {
+    const fname = f.arquivo_novo.replace(/\\/g, "/").split("/").pop().replace(/\.[^.]+$/, "");
+    const mSE = fname.match(/[Ss](\d+)[Ee](\d+)/);
+    const mNum = fname.match(/^(\d+)\s*[-–]\s*(.+)/);
+    if (mSE) {
+      epLabel  = `T${mSE[1]} · E${mSE[2].padStart(2,"0")}`;
+      // Nome após o SxxExx se existir
+      const resto = fname.replace(/.*[Ss]\d+[Ee]\d+[-.\s]*/, "").trim();
+      epTitulo = resto || fname;
+    } else if (mNum) {
+      epLabel  = `Ep. ${mNum[1]}`;
+      epTitulo = mNum[2].trim();
+    } else {
+      epTitulo = fname;
+    }
+  }
+
+  const tituloSerie  = f.tipo === "serie" ? `<div class="player-serie-nome">${f.titulo_pt || f.titulo}</div>` : "";
+  const tituloPrincipal = f.tipo === "serie"
+    ? (epLabel ? `${epLabel} — ${epTitulo}` : epTitulo || f.titulo_pt)
+    : (f.titulo_pt || f.titulo || "Sem título");
+
   document.getElementById("player-info").innerHTML = `
     <div class="player-title-row">
       <div>
-        <h1>${f.titulo_pt || f.titulo || "Sem título"}</h1>
-        ${f.titulo_original && f.titulo_original !== f.titulo_pt
+        ${tituloSerie}
+        <h1>${tituloPrincipal}</h1>
+        ${f.tipo !== "serie" && f.titulo_original && f.titulo_original !== f.titulo_pt
           ? `<div class="player-original">${f.titulo_original}</div>` : ""}
       </div>
     </div>
@@ -92,8 +246,7 @@ async function load() {
       ${f.ano    ? `<span class="tag">${f.ano}</span>`    : ""}
       ${f.genero ? `<span class="tag">${f.genero}</span>` : ""}
       ${f.idioma ? `<span class="tag">${f.idioma}</span>` : ""}
-      ${horrorBadge}
-      ${legBadge}
+      ${horrorBadge}${legBadge}
       ${f.tmdb_url ? `<a href="${f.tmdb_url}" target="_blank" class="tmdb-link">TMDB ↗</a>` : ""}
     </div>
     ${f.sinopse ? `<p class="player-synopsis">${f.sinopse}</p>` : ""}

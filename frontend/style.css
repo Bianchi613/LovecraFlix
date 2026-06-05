@@ -213,6 +213,11 @@ main { flex: 1; padding: 1.5rem 2rem; }
 .player-title-row h1 {
   font-size: 2rem; line-height: 1.2; font-weight: 800;
 }
+.player-serie-nome {
+  font-size: .88rem; color: var(--accent);
+  font-weight: 600; letter-spacing: .3px;
+  margin-bottom: .3rem; text-transform: uppercase;
+}
 .player-original {
   font-size: .9rem; color: var(--muted);
   font-style: italic; margin-top: .2rem; margin-bottom: .75rem;

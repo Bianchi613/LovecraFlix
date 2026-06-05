@@ -108,12 +108,24 @@ async function load() {
   const container = document.getElementById("temporadas");
   for (const t of Object.keys(porTemp).sort((a,b) => a - b)) {
     const label = t == 0 ? "Episódios" : `Temporada ${t}`;
+
+    // Lista plana ordenada por temporada + episódio
+    const allEps = Object.keys(porTemp)
+      .sort((a, b) => Number(a) - Number(b))
+      .flatMap(s => [...porTemp[s]].sort((a, b) => (a.episodio || 0) - (b.episodio || 0)));
+
     const lista = porTemp[t].map(ep => {
-      const epLabel = ep.episodio ? `E${String(ep.episodio).padStart(2,"0")}` : "";
-      const fname   = ep.arquivo_novo.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"");
-      const titulo  = epLabel ? fname : fname;
-      const leg     = ep.tem_legenda ? `<span class="ep-leg">CC</span>` : "";
-      return `<div class="ep-item" onclick="location.href='/player?id=${ep.id}'">
+      const epLabel  = ep.episodio ? `E${String(ep.episodio).padStart(2,"0")}` : "";
+      const fname    = ep.arquivo_novo.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"");
+      const leg      = ep.tem_legenda ? `<span class="ep-leg">CC</span>` : "";
+
+      // Filtra pelo mesmo idioma para não pular de PT para EN
+      const mesmoIdioma = allEps.filter(e => e.idioma === ep.idioma);
+      const globalIdx   = mesmoIdioma.findIndex(e => e.id === ep.id);
+      const nextEp      = mesmoIdioma[globalIdx + 1];
+      const nextFname   = nextEp ? nextEp.arquivo_novo.replace(/\\/g,"/").split("/").pop().replace(/\.[^.]+$/,"") : "";
+      const nextParam   = nextEp ? `&next_id=${nextEp.id}&next_titulo=${encodeURIComponent(nextFname)}` : "";
+      return `<div class="ep-item" onclick="location.href='/player?id=${ep.id}${nextParam}'">
         <span class="ep-num">${epLabel || "–"}</span>
         <span class="ep-title">${fname}</span>
         <span class="ep-lang">${ep.idioma || ""}</span>
