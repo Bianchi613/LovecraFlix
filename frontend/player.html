@@ -108,6 +108,7 @@
 </div>
 
 <div class="player-info" id="player-info"></div>
+<div class="player-info" style="padding-top:0" id="stars-container"></div>
 
 <script>
 const params     = new URLSearchParams(location.search);
@@ -144,7 +145,9 @@ function iniciarAutoplay() {
 }
 
 async function mostrarRecomendacoes() {
-  const r    = await fetch(`/api/recomendacoes?id=${filmeId}`);
+  const token = localStorage.getItem("lc_token");
+  const r    = await fetch(`/api/recomendacoes?id=${filmeId}`,
+    { headers: { Authorization: `Bearer ${token}` } });
   const recs = await r.json();
   const grid = document.getElementById("rec-grid");
   grid.innerHTML = "";
@@ -251,6 +254,63 @@ async function load() {
     </div>
     ${f.sinopse ? `<p class="player-synopsis">${f.sinopse}</p>` : ""}
   `;
+
+  // Carrega avaliação do usuário
+  carregarEstrelas(filmeId);
+}
+
+async function carregarEstrelas(fid) {
+  const token = localStorage.getItem("lc_token");
+  const [rNota, rMedia] = await Promise.all([
+    fetch(`/api/avaliacao?filme_id=${fid}`, { headers: { Authorization: `Bearer ${token}` } }),
+    fetch(`/api/avaliacoes/media?filme_id=${fid}`)
+  ]);
+  const { nota }  = await rNota.json();
+  const { media, total } = await rMedia.json();
+
+  const container = document.getElementById("stars-container");
+  container.innerHTML = `
+    <div class="stars-widget">
+      <span class="stars-label">Sua avaliação:</span>
+      <div class="stars" id="stars">
+        ${[1,2,3,4,5].map(n =>
+          `<span class="star ${n <= nota ? 'filled' : ''}" data-val="${n}">★</span>`
+        ).join("")}
+      </div>
+      ${total > 0 ? `<span class="stars-media">Média: ${media}★ (${total})</span>` : ""}
+      <span class="stars-saved" id="stars-saved">✓ Salvo</span>
+    </div>`;
+
+  const stars = document.querySelectorAll(".star");
+  let notaAtual = nota;
+
+  stars.forEach(s => {
+    const val = parseInt(s.dataset.val);
+    s.addEventListener("mouseenter", () => {
+      stars.forEach(x => {
+        x.className = "star" + (parseInt(x.dataset.val) <= val ? " hover-on" : "");
+      });
+    });
+    s.addEventListener("mouseleave", () => {
+      stars.forEach(x => {
+        x.className = "star" + (parseInt(x.dataset.val) <= notaAtual ? " filled" : "");
+      });
+    });
+    s.addEventListener("click", async () => {
+      notaAtual = val;
+      stars.forEach(x => {
+        x.className = "star" + (parseInt(x.dataset.val) <= val ? " filled" : "");
+      });
+      await fetch("/api/avaliar", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ filme_id: fid, nota: val })
+      });
+      const saved = document.getElementById("stars-saved");
+      saved.classList.add("show");
+      setTimeout(() => saved.classList.remove("show"), 2000);
+    });
+  });
 }
 
 load();

@@ -42,6 +42,16 @@ def get_db():
             avatar TEXT DEFAULT 'octopus'
         )
     """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS avaliacoes (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            usuario_id INTEGER NOT NULL,
+            filme_id   INTEGER NOT NULL,
+            nota       INTEGER NOT NULL CHECK(nota BETWEEN 1 AND 5),
+            criado_em  TEXT DEFAULT (datetime('now')),
+            UNIQUE(usuario_id, filme_id)
+        )
+    """)
     conn.commit()
     return conn
 
@@ -155,6 +165,52 @@ def auth_me(token: str = Depends(verificar_token)):
     if not row:
         raise HTTPException(404)
     return dict(row)
+
+
+@app.post("/api/avaliar")
+def avaliar(dados: dict, token: str = Depends(verificar_token)):
+    nota = dados.get("nota")
+    filme_id = dados.get("filme_id")
+    if not isinstance(nota, int) or nota < 1 or nota > 5:
+        raise HTTPException(400, "Nota deve ser entre 1 e 5")
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    conn = get_db()
+    user = conn.execute("SELECT id FROM usuarios WHERE email=?", (payload["sub"],)).fetchone()
+    if not user:
+        conn.close(); raise HTTPException(404)
+    conn.execute("""
+        INSERT INTO avaliacoes (usuario_id, filme_id, nota) VALUES (?,?,?)
+        ON CONFLICT(usuario_id, filme_id) DO UPDATE SET nota=excluded.nota, criado_em=datetime('now')
+    """, (user["id"], filme_id, nota))
+    conn.commit()
+    conn.close()
+    return {"ok": True, "nota": nota}
+
+
+@app.get("/api/avaliacao")
+def get_avaliacao(filme_id: int, token: str = Depends(verificar_token)):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    conn = get_db()
+    user = conn.execute("SELECT id FROM usuarios WHERE email=?", (payload["sub"],)).fetchone()
+    if not user:
+        conn.close(); return {"nota": 0}
+    row = conn.execute(
+        "SELECT nota FROM avaliacoes WHERE usuario_id=? AND filme_id=?",
+        (user["id"], filme_id)
+    ).fetchone()
+    conn.close()
+    return {"nota": row["nota"] if row else 0}
+
+
+@app.get("/api/avaliacoes/media")
+def media_avaliacao(filme_id: int):
+    conn = get_db()
+    row = conn.execute(
+        "SELECT AVG(nota) as media, COUNT(*) as total FROM avaliacoes WHERE filme_id=?",
+        (filme_id,)
+    ).fetchone()
+    conn.close()
+    return {"media": round(row["media"], 1) if row["media"] else 0, "total": row["total"]}
 
 
 @app.put("/api/perfil")
@@ -510,43 +566,62 @@ def detalhe_filme(id: int):
 
 
 @app.get("/api/recomendacoes")
-def recomendacoes(id: int):
+def recomendacoes(id: int, token: str = Depends(verificar_token)):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
     conn = get_db()
+
+    user = conn.execute("SELECT id FROM usuarios WHERE email=?", (payload["sub"],)).fetchone()
+    uid  = user["id"] if user else None
+
     origem = conn.execute("SELECT genero, tipo FROM filmes WHERE id=?", (id,)).fetchone()
     genero = origem["genero"] if origem else None
 
-    # Filmes do mesmo gênero (excluindo o atual)
-    filmes = conn.execute("""
-        SELECT DISTINCT f.id, f.titulo_pt, f.genero, f.ano, f.tipo,
-               CASE WHEN f.poster_local NOT LIKE '%_organizer%' THEN f.poster_local ELSE NULL END as poster_local
-        FROM filmes f
-        WHERE f.arquivo_novo IS NOT NULL AND f.tipo NOT IN ('serie','documentario')
-          AND f.id != ? AND (f.genero = ? OR ? IS NULL)
-        GROUP BY f.titulo_pt
-        ORDER BY RANDOM() LIMIT 4
-    """, (id, genero, genero)).fetchall()
+    # Gêneros que o usuário gosta (nota >= 4)
+    generos_fav = []
+    if uid:
+        rows = conn.execute("""
+            SELECT f.genero, AVG(a.nota) as media
+            FROM avaliacoes a JOIN filmes f ON f.id = a.filme_id
+            WHERE a.usuario_id = ? AND a.nota >= 4
+            GROUP BY f.genero ORDER BY media DESC LIMIT 3
+        """, (uid,)).fetchall()
+        generos_fav = [r["genero"] for r in rows if r["genero"]]
 
-    # Séries aleatórias
+    # Usa gêneros favoritos ou o gênero do conteúdo atual
+    generos_busca = generos_fav if generos_fav else ([genero] if genero else [])
+    genero_sql    = ",".join(f"'{g}'" for g in generos_busca) if generos_busca else "''"
+
+    filmes = conn.execute(f"""
+        SELECT DISTINCT f.id, f.titulo_pt, f.genero, f.ano, f.tipo,
+               CASE WHEN f.poster_local NOT LIKE '%_organizer%' THEN f.poster_local ELSE NULL END as poster_local,
+               COALESCE(a.nota, 0) as minha_nota
+        FROM filmes f
+        LEFT JOIN avaliacoes a ON a.filme_id = f.id AND a.usuario_id = ?
+        WHERE f.arquivo_novo IS NOT NULL AND f.tipo NOT IN ('serie','documentario')
+          AND f.id != ?
+          AND (f.genero IN ({genero_sql}) OR '{genero}' IS NULL)
+          AND (a.nota IS NULL OR a.nota >= 3)
+        GROUP BY f.titulo_pt
+        ORDER BY a.nota DESC NULLS LAST, RANDOM() LIMIT 5
+    """, (uid or 0, id)).fetchall()
+
     series = conn.execute("""
-        SELECT titulo_pt, genero, poster_local,
-               MIN(id) as id,
-               SUBSTR(arquivo_novo, 1, LENGTH(arquivo_novo) - LENGTH(arquivo_novo) - 1) as pasta
+        SELECT titulo_pt, genero, poster_local, MIN(id) as id
         FROM filmes
         WHERE tipo = 'serie' AND arquivo_novo IS NOT NULL
           AND poster_local IS NOT NULL AND poster_local NOT LIKE '%_organizer%'
-        GROUP BY titulo_pt
-        ORDER BY RANDOM() LIMIT 2
+        GROUP BY titulo_pt ORDER BY RANDOM() LIMIT 2
     """).fetchall()
     conn.close()
 
     result = []
     for f in filmes:
         d = dict(f)
-        d["url"] = f"/filme?titulo={d['titulo_pt']}" if True else f"/player?id={d['id']}"
+        d["url"] = f"/player?id={d['id']}"
         result.append(d)
     for s in series:
         d = dict(s)
-        d["url"] = f"/series?pasta={d.get('pasta','')}&nome={d['titulo_pt']}"
+        d["url"] = f"/series?nome={d['titulo_pt']}"
         result.append(d)
     return result
 
