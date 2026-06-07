@@ -6,6 +6,25 @@ python-for-android durante o build do APK (`buildozer.spec` aponta
 vídeo (`ffpyplayer` — o coração do app) é incompatível com o toolchain
 "de ponta" que o p4a usa por padrão hoje.
 
+## Como o APK é gerado
+
+A cadeia de ferramentas, do push até o `.apk` pronto:
+
+1. **GitHub Actions** — dispara o workflow a cada `push` na branch `main`
+   (`.github/workflows/build-apk.yml`), num runner Linux do GitHub
+2. **Buildozer** — lê o [`buildozer.spec`](../buildozer.spec) e orquestra
+   todo o empacotamento Android
+3. **python-for-android (p4a)** — o motor por trás do Buildozer: baixa
+   NDK/SDK do Android, compila Python e todas as dependências (Kivy,
+   KivyMD, Pillow, **ffpyplayer**, FFmpeg...) para ARM64 e monta o `.apk`
+4. **As receitas locais** (esta pasta) — travam as versões compatíveis
+   entre si (ver tabela abaixo), contornando a incompatibilidade do
+   `ffpyplayer` com o toolchain padrão mais recente do p4a
+
+O resultado final (`lovecraflix-apk`, ~32.9 MB) fica disponível como
+**artifact** anexado à run do GitHub Actions — é o que se baixa para
+instalar no celular (ver instruções no [README principal](../../README.md)).
+
 ## O problema original
 
 `ffpyplayer` v4.5.1 tem bindings Cython **compilados** que referenciam APIs
