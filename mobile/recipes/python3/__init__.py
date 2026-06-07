@@ -247,8 +247,14 @@ class Python3Recipe(TargetPythonRecipe):
         if 'sqlite3' in self.ctx.recipe_build_order:
             info('Activating flags for sqlite3')
             recipe = Recipe.get_recipe('sqlite3', self.ctx)
+            # Versão original chamava recipe.get_lib_dir(arch), método que só
+            # existe em NDKRecipe — a receita atual de sqlite3 (não travada
+            # localmente, usa a mais recente) virou uma Recipe simples que
+            # constrói libsqlite3.so direto no build_dir (built_libraries =
+            # {'libsqlite3.so': '.'}), então o diretório da lib é o próprio
+            # build_dir.
             add_flags(' -I' + recipe.get_build_dir(arch.arch),
-                      ' -L' + recipe.get_lib_dir(arch), ' -lsqlite3')
+                      ' -L' + recipe.get_build_dir(arch.arch), ' -lsqlite3')
 
         if 'libffi' in self.ctx.recipe_build_order:
             info('Activating flags for libffi')
