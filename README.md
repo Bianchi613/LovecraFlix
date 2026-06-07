@@ -112,6 +112,17 @@ python main.py
 Na primeira execução, informe a URL do servidor (ex: `http://127.0.0.1:8000`)
 na tela de login.
 
+### Instalar o APK no Android
+
+O app é compilado automaticamente para Android (com vídeo via `ffpyplayer`)
+a cada push, através do GitHub Actions + Buildozer:
+
+1. Acesse [Actions](https://github.com/Bianchi613/LovecraFlix/actions) e
+   abra a run mais recente com ✅ na branch `main`
+2. Role até a seção **Artifacts** e baixe **`lovecraflix-apk`**
+3. Transfira o `.apk` para o celular e instale (pode ser necessário ativar
+   "Instalar de fontes desconhecidas" nas configurações do Android)
+
 ### Telas
 
 - **Boas-vindas / Login / Cadastro** — autenticação contra a mesma API do backend
