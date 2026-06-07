@@ -5,6 +5,9 @@ config.json
 *.db
 *.sqlite
 
+# Cache de imagens geradas (avatares do app mobile)
+mobile/.emoji_cache/
+
 # Python
 __pycache__/
 *.pyc

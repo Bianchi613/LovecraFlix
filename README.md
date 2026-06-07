@@ -95,6 +95,38 @@ Acesse **`http://localhost:8000`**.
 
 ---
 
+## App mobile (KivyMD)
+
+Cliente mobile nativo (Android/desktop) feito com **Kivy + KivyMD**, que se
+conecta ao mesmo backend — pense nele como o app oficial do seu LovecraFlix
+pessoal.
+
+### Executando
+
+```bash
+cd mobile
+pip install -r requirements.txt
+python main.py
+```
+
+Na primeira execução, informe a URL do servidor (ex: `http://127.0.0.1:8000`)
+na tela de login.
+
+### Telas
+
+- **Boas-vindas / Login / Cadastro** — autenticação contra a mesma API do backend
+- **Home** — busca, filtros por gênero/tipo e grade de pôsteres
+- **Perfil** — nome de exibição e escolha entre 18 avatares temáticos
+  (renderizados como emojis coloridos via `emoji_img.py`, com cache local)
+- **Séries** — episódios agrupados por temporada
+- **Player** — reprodução com troca de faixa de áudio (Dual PT/EN) e
+  auto-play entre partes/episódios
+
+> A janela roda em proporção de celular (`400x750`) para facilitar o
+> desenvolvimento e testes no PC.
+
+---
+
 ## Estrutura de arquivos
 
 ```
@@ -115,6 +147,13 @@ LovecraftianFlix/
 │   ├── documentario.html   # Episódios de documentário
 │   ├── app.js
 │   └── style.css
+├── mobile/
+│   ├── main.py             # App KivyMD — ponto de entrada
+│   ├── api.py              # Cliente HTTP para o backend
+│   ├── store.py            # Estado global, persistência e avatares
+│   ├── emoji_img.py        # Renderização de emojis coloridos (avatares)
+│   ├── screens/            # Telas (login, home, perfil, player, séries...)
+│   └── requirements.txt
 ├── config.json             # Criado pelo setup (caminhos e porta)
 ├── config.example.json     # Modelo de configuração
 ├── iniciar.bat             # Atalho Windows
