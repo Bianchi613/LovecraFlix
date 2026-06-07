@@ -8,6 +8,10 @@ config.json
 # Cache de imagens geradas (avatares do app mobile)
 mobile/.emoji_cache/
 
+# Artefatos de build do APK (gerados pelo Buildozer / GitHub Actions)
+mobile/.buildozer/
+mobile/bin/
+
 # Python
 __pycache__/
 *.pyc

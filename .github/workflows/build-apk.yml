@@ -1,0 +1,32 @@
+name: Build APK do app mobile
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/**"
+      - ".github/workflows/build-apk.yml"
+
+jobs:
+  build-android:
+    name: Buildozer Android debug
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build com Buildozer
+        uses: ArtemSBulgakov/buildozer-action@v1
+        id: buildozer
+        with:
+          command: buildozer android debug
+          workdir: mobile
+          buildozer_version: stable
+
+      - name: Publica o APK como artefato
+        uses: actions/upload-artifact@v4
+        with:
+          name: lovecraflix-apk
+          path: ${{ steps.buildozer.outputs.filename }}

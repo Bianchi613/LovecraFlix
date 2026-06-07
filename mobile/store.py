@@ -40,7 +40,7 @@ def get_avatar(av_id):
     return AVATAR_BY_ID.get(av_id) or AVATAR_BY_ID["octopus"]
 
 class State:
-    base_url = "http://127.0.0.1:8000"
+    base_url = "http://192.168.1.64:8000"
     token    = ""
     nome     = ""
     avatar   = "octopus"
@@ -54,7 +54,7 @@ state = State()
 def load():
     try:
         d = json.loads(CFG.read_text())
-        state.base_url = d.get("base_url", "http://127.0.0.1:8000")
+        state.base_url = d.get("base_url", "http://192.168.1.64:8000")
         state.token    = d.get("token", "")
         state.nome     = d.get("nome", "")
         state.avatar   = d.get("avatar", "octopus")

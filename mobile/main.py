@@ -5,10 +5,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 from kivymd.app import MDApp
 from kivy.uix.screenmanager import ScreenManager, SlideTransition
 from kivy.core.window import Window
+from kivy.utils import platform
 from store import state, load
 
-# Simula tamanho de celular no PC
-Window.size = (400, 750)
+# Simula tamanho de celular no PC (no Android o app já roda em tela cheia)
+if platform not in ("android", "ios"):
+    Window.size = (400, 750)
 from screens.login   import LoginScreen
 from screens.home    import HomeScreen
 from screens.welcome import WelcomeScreen
