@@ -10,7 +10,7 @@ source.exclude_dirs = .emoji_cache,__pycache__,.buildozer,bin,screens/__pycache_
 
 version = 0.1
 
-requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests,pillow
+requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests,pillow,ffpyplayer
 
 orientation = portrait
 fullscreen = 0
