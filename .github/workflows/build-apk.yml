@@ -17,16 +17,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Build com Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Configura Python
+        uses: actions/setup-python@v5
         with:
-          command: buildozer android debug
-          workdir: mobile
-          buildozer_version: stable
+          python-version: "3.11"
+
+      - name: Instala dependências do sistema
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            openjdk-17-jdk build-essential autoconf automake libtool \
+            pkg-config zlib1g-dev libncurses-dev cmake libffi-dev libssl-dev \
+            git zip unzip libltdl-dev
+
+      - name: Instala Buildozer
+        run: pip install --upgrade buildozer cython
+
+      - name: Build com Buildozer
+        working-directory: mobile
+        run: buildozer -v android debug
 
       - name: Publica o APK como artefato
         uses: actions/upload-artifact@v4
         with:
           name: lovecraflix-apk
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: mobile/bin/*.apk
