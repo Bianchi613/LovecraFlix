@@ -29,7 +29,9 @@ android.permissions = INTERNET
 # Apps com targetSdk >= 28 bloqueiam tráfego HTTP puro por padrão; o backend
 # do LovecraFlix roda em http:// na rede local (sem HTTPS), então liberamos
 # cleartext globalmente para o app conseguir falar com ele.
-android.extra_manifest_application_arguments = android:usesCleartextTraffic='true'
+# OBS: essa opção espera um CAMINHO DE ARQUIVO (o Buildozer faz open() nela),
+# não o texto direto — por isso aponta pro extra_manifest_args.txt.
+android.extra_manifest_application_arguments = %(source.dir)s/extra_manifest_args.txt
 
 android.api = 33
 android.minapi = 24
