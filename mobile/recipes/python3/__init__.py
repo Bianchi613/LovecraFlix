@@ -332,9 +332,15 @@ class Python3Recipe(TargetPythonRecipe):
         env = self.get_recipe_env(arch)
         env = self.set_libs_flags(env, arch)
 
+        # Versão original chamava .stdout.strip().decode('utf-8') — API de uma
+        # versão antiga da lib "sh" que devolvia um objeto com atributo .stdout
+        # (bytes). A versão da "sh" instalada no toolchain atual já devolve o
+        # resultado da chamada como string pronta (decodificada), então só
+        # resta dar .strip() — exatamente como a receita atual (não travada)
+        # faz para essa mesma chamada.
         android_build = sh.Command(
             join(recipe_build_dir,
-                 'config.guess'))().stdout.strip().decode('utf-8')
+                 'config.guess'))().strip()
 
         with current_directory(build_dir):
             if not exists('config.status'):
