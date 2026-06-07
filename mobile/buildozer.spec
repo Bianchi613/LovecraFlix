@@ -10,7 +10,12 @@ source.exclude_dirs = .emoji_cache,__pycache__,.buildozer,bin,screens/__pycache_
 
 version = 0.1
 
-requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests,pillow
+requirements = python3,kivy==2.3.1,kivymd==1.2.0,requests,pillow,ffpyplayer
+
+# Receita customizada do ffpyplayer (em mobile/recipes/) — corrige um bug de
+# compatibilidade entre as receitas oficiais ffpyplayer/ffmpeg do toolchain
+# (ver comentário em recipes/ffpyplayer/__init__.py para detalhes).
+p4a.local_recipes = %(source.dir)s/recipes
 
 orientation = portrait
 fullscreen = 0
