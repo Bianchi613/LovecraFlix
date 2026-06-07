@@ -32,6 +32,11 @@ android.archs = arm64-v8a
 
 android.allow_backup = True
 
+# Aceita as licenças do Android SDK automaticamente — sem isso o sdkmanager
+# fica esperando uma resposta "y" interativa, que nunca chega no CI e quebra
+# a instalação do build-tools (erro "Aidl not found").
+android.accept_sdk_license = True
+
 [buildozer]
 
 log_level = 2
