@@ -10,17 +10,48 @@ from kivymd.uix.slider import MDSlider
 
 from kivy.uix.video import Video
 from kivy.uix.floatlayout import FloatLayout
+from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.widget import Widget
 from kivy.graphics import Color, Rectangle
 from kivy.metrics import dp
 from kivy.clock import Clock
 from kivy.core.window import Window
+from kivy.utils import platform
 
 from store import state, ACCENT
 import api
 
 
-class VideoContainer(FloatLayout):
-    """FloatLayout que captura toques para mostrar/ocultar overlay de controles."""
+def _set_immersive(hide):
+    """Esconde/mostra a barra de status e a barra de navegação no Android."""
+    if platform != "android":
+        return
+    try:
+        from jnius import autoclass
+        View = autoclass("android.view.View")
+        activity = autoclass("org.kivy.android.PythonActivity").mActivity
+        decor = activity.getWindow().getDecorView()
+        if hide:
+            decor.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+            )
+        else:
+            decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE)
+    except Exception:
+        pass  # acabamento visual — nunca deve derrubar o player
+
+
+class VideoContainer(RelativeLayout):
+    """RelativeLayout que captura toques para mostrar/ocultar overlay de
+    controles. Precisa ser RelativeLayout (não FloatLayout): seus filhos
+    (`video`, `overlay`) são adicionados com size_hint=(1,1) e sem pos_hint,
+    e só o RelativeLayout traduz automaticamente a posição deles para o
+    canto deste container — um FloatLayout deixaria ambos travados em (0,0)."""
 
     def __init__(self, player_ref, **kw):
         super().__init__(**kw)
@@ -151,7 +182,7 @@ class PlayerScreen(MDScreen):
         self.video_container.add_widget(self.overlay)
 
         # ── Informações (abaixo do vídeo) ──────────────────────────────────
-        self.info_scroll = MDScrollView(size_hint=(1, 1))
+        self.info_scroll = MDScrollView(size_hint=(1, None))
         self.info_box = MDBoxLayout(
             orientation="vertical",
             padding=dp(16),
@@ -160,10 +191,24 @@ class PlayerScreen(MDScreen):
         )
         self.info_scroll.add_widget(self.info_box)
 
-        # No Kivy BoxLayout vertical: primeiro adicionado → baixo, último → cima.
-        # info_scroll primeiro (baixo/scrollável), video_container segundo (cima/topo).
-        root.add_widget(self.info_scroll)
+        # info_area é quem realmente ocupa "o espaço que sobra abaixo do
+        # vídeo" perante o `root` (no lugar de info_scroll antes) — assim
+        # _toggle_fullscreen continua colapsando/restaurando UM widget só
+        # (igual já fazia, sem duplicar a contabilidade que causou o bug
+        # do "vídeo voa pra fora da tela"). Por dentro, info_scroll fica do
+        # tamanho do CONTEÚDO (sem vazio interno) e um spacer invisível
+        # absorve a sobra como fundo neutro — sinopse curta não deixa vazio
+        # e o vídeo continua colado no topo (spacer fica abaixo do texto).
+        self.info_area = MDBoxLayout(orientation="vertical", size_hint=(1, 1))
+        self.info_area.add_widget(self.info_scroll)
+        self.info_area.add_widget(Widget(size_hint_y=1))
+        self.info_box.bind(height=self._ajustar_altura_info)
+        self._ajustar_altura_info()
+
+        # No MDBoxLayout vertical: primeiro adicionado → topo, último → baixo.
+        # video_container primeiro (topo), info_area depois (abaixo).
         root.add_widget(self.video_container)
+        root.add_widget(self.info_area)
 
         threading.Thread(target=self._carregar, daemon=True).start()
 
@@ -215,26 +260,52 @@ class PlayerScreen(MDScreen):
             self.vol_slider.value = self._last_volume if self._last_volume > 0 else 1.0
         self._reset_hide_timer()
 
+    def _ajustar_altura_info(self, *_):
+        """info_scroll fica do tamanho do CONTEÚDO (info_box), nunca maior —
+        sinopse curta não deixa vazio dentro da área de descrição (o spacer
+        elástico ao lado de info_scroll absorve a sobra como fundo neutro).
+        Um teto (espaço disponível abaixo do vídeo) preserva o comportamento
+        antigo para sinopses compridas: para de crescer e vira scroll.
+        Não mexe durante o modo cinema — lá _toggle_fullscreen colapsa
+        info_area inteiro de propósito (ver comentário lá)."""
+        if self.is_fullscreen:
+            return
+        teto = max(0.0, self._root.height - self.video_container.height)
+        self.info_scroll.height = min(self.info_box.height, teto)
+
     def _toggle_fullscreen(self, *args):
+        # "Modo cinema" dentro da própria janela retrato — nunca mexer em
+        # Window.size aqui: o app é travado em portrait (buildozer.spec) e
+        # trocar as dimensões na mão descasava o layout da tela física.
         if not self.is_fullscreen:
             self.is_fullscreen = True
             self.fs_btn.icon = "fullscreen-exit"
-            Window.size = (int(Window.height), int(Window.width))
             self.video_container.size_hint = (1, 1)
-            self.info_scroll.size_hint_y = 0
-            self.info_scroll.opacity = 0
+            # size_hint_y=0 NÃO colapsa no BoxLayout: o Kivy ainda conta o
+            # widget como "participante elástico" mas pula o recálculo da
+            # altura (in `if sh:`, e 0 é falso) — a altura antiga continuaria
+            # reservada e empurraria o vídeo pra fora da tela. Para colapsar
+            # de verdade: size_hint_y=None + height=0. Mexe em info_area (o
+            # filho direto de root) — info_scroll e o spacer ficam dentro
+            # dele e colapsam juntos, sem precisar de contabilidade dupla.
+            self.info_area.size_hint_y = None
+            self.info_area.height = 0
+            self.info_area.opacity = 0
+            _set_immersive(True)
         else:
             self.is_fullscreen = False
             self.fs_btn.icon = "fullscreen"
-            Window.size = (int(Window.height), int(Window.width))
-            Clock.schedule_once(self._restore_portrait, 0.05)
+            self.video_container.size_hint = (1, None)
+            self.video_container.height = Window.width * 9 / 16
+            self.info_area.size_hint_y = 1
+            self.info_area.opacity = 1
+            self._ajustar_altura_info()
+            _set_immersive(False)
         self._reset_hide_timer()
 
-    def _restore_portrait(self, dt):
-        self.video_container.size_hint_y = None
-        self.video_container.height = Window.width * 9 / 16
-        self.info_scroll.size_hint_y = 1
-        self.info_scroll.opacity = 1
+    def on_leave(self):
+        """Restaura as barras do Android, não importa por onde se saia da tela."""
+        _set_immersive(False)
 
     # ── Navegação ──────────────────────────────────────────────────────────
 
@@ -245,9 +316,6 @@ class PlayerScreen(MDScreen):
         if self._hide_event:
             self._hide_event.cancel()
             self._hide_event = None
-        if self.is_fullscreen:
-            self.is_fullscreen = False
-            Window.size = (int(Window.height), int(Window.width))
 
         self.video.state = "stop"
         try:
