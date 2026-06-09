@@ -46,6 +46,43 @@ def _set_immersive(hide):
         pass  # acabamento visual — nunca deve derrubar o player
 
 
+def _girar_tela(paisagem):
+    """Gira a tela só no modo cinema. No Android usa a API de orientação e
+    deixa o PRÓPRIO SO redimensionar a janela — nunca mexemos em Window.size no
+    celular (fazer isso na mão já descasou o layout da tela física antes). No
+    desktop não há rotação de verdade, então simulamos trocando Window.size, só
+    pra dar pra conferir o resultado no PC."""
+    if platform == "android":
+        try:
+            from jnius import autoclass
+            from android.runnable import run_on_ui_thread
+            PythonActivity = autoclass("org.kivy.android.PythonActivity")
+            ActivityInfo = autoclass("android.content.pm.ActivityInfo")
+
+            @run_on_ui_thread
+            def _aplicar():
+                modo = (
+                    ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                    if paisagem
+                    else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                )
+                PythonActivity.mActivity.setRequestedOrientation(modo)
+
+            _aplicar()
+        except Exception:
+            pass  # se a rotação falhar, o full ainda funciona (só não gira)
+    else:
+        # No desktop o setter de Window.size re-aplica o scaling de DPI; sem
+        # dividir pela densidade a janela cresceria a cada toggle (e o "retrato
+        # de volta" não bateria). No celular este galho nem roda.
+        from kivy.metrics import Metrics
+        d = Metrics.density or 1.0
+        deitar = paisagem and Window.width < Window.height
+        levantar = (not paisagem) and Window.width > Window.height
+        if deitar or levantar:
+            Window.size = (Window.height / d, Window.width / d)
+
+
 class VideoContainer(RelativeLayout):
     """RelativeLayout que captura toques para mostrar/ocultar overlay de
     controles. Precisa ser RelativeLayout (não FloatLayout): seus filhos
@@ -104,7 +141,12 @@ class PlayerScreen(MDScreen):
             height=self._portrait_video_h,
         )
 
-        self.video = Video(state="stop", size_hint=(1, 1), volume=1.0)
+        # fit_mode="contain": o vídeo escala pra encher o container mantendo a
+        # proporção (imagem inteira, sem cortar nem distorcer). Sem isso o Kivy
+        # desenha a textura no tamanho nativo e sobra tarja preta em volta.
+        self.video = Video(
+            state="stop", size_hint=(1, 1), volume=1.0, fit_mode="contain"
+        )
         self.video_container.add_widget(self.video)
 
         # ── Overlay de controles (começa oculto) ───────────────────────────
@@ -210,6 +252,12 @@ class PlayerScreen(MDScreen):
         root.add_widget(self.video_container)
         root.add_widget(self.info_area)
 
+        # Quando a janela muda de tamanho (resize no desktop, ou o Android
+        # girando a tela ao entrar/sair do cinema), refaz a faixa 16:9 do vídeo
+        # e a área de info — sem depender de ler Window.width na hora do toggle
+        # (no Android a rotação é assíncrona; o on_resize chega depois e acerta).
+        Window.bind(on_resize=self._on_window_resize)
+
         threading.Thread(target=self._carregar, daemon=True).start()
 
     # ── Overlay ────────────────────────────────────────────────────────────
@@ -273,10 +321,20 @@ class PlayerScreen(MDScreen):
         teto = max(0.0, self._root.height - self.video_container.height)
         self.info_scroll.height = min(self.info_box.height, teto)
 
+    def _on_window_resize(self, *_):
+        """Refaz a faixa 16:9 do vídeo e a área de info quando a janela muda
+        (resize no desktop, ou o Android terminando de girar). Em modo cinema o
+        container é size_hint=(1,1), então não há faixa fixa a recalcular."""
+        if self.is_fullscreen:
+            return
+        self.video_container.height = Window.width * 9 / 16
+        self._ajustar_altura_info()
+
     def _toggle_fullscreen(self, *args):
-        # "Modo cinema" dentro da própria janela retrato — nunca mexer em
-        # Window.size aqui: o app é travado em portrait (buildozer.spec) e
-        # trocar as dimensões na mão descasava o layout da tela física.
+        # "Modo cinema": gira a tela pra paisagem (um filme ultra-wide cobre
+        # ~78% da tela deitado contra ~22% em pé). No celular quem redimensiona
+        # é o SO via _girar_tela — nunca mexemos em Window.size na mão lá. A
+        # faixa retrato se refaz pelo _on_window_resize quando a rotação assenta.
         if not self.is_fullscreen:
             self.is_fullscreen = True
             self.fs_btn.icon = "fullscreen-exit"
@@ -292,20 +350,25 @@ class PlayerScreen(MDScreen):
             self.info_area.height = 0
             self.info_area.opacity = 0
             _set_immersive(True)
+            _girar_tela(True)
         else:
             self.is_fullscreen = False
             self.fs_btn.icon = "fullscreen"
             self.video_container.size_hint = (1, None)
-            self.video_container.height = Window.width * 9 / 16
             self.info_area.size_hint_y = 1
             self.info_area.opacity = 1
+            _girar_tela(False)  # volta a retrato; dispara _on_window_resize
+            self.video_container.height = Window.width * 9 / 16
             self._ajustar_altura_info()
             _set_immersive(False)
         self._reset_hide_timer()
 
     def on_leave(self):
-        """Restaura as barras do Android, não importa por onde se saia da tela."""
+        """Restaura as barras do Android e solta o bind de resize. O main.py
+        recria a PlayerScreen a cada navegação, então sem o unbind iam se
+        acumulando handlers de janela mortos a cada vídeo aberto."""
         _set_immersive(False)
+        Window.unbind(on_resize=self._on_window_resize)
 
     # ── Navegação ──────────────────────────────────────────────────────────
 

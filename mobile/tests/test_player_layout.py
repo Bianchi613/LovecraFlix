@@ -58,6 +58,9 @@ def _build_screen():
     state.token = "fake-token-de-teste"
     state.next_id = None
 
+    # cada teste começa em retrato — o teste de cinema gira pra paisagem, então
+    # resetar aqui isola um teste do outro mesmo se algum falhar no meio
+    Window.size = (400, 750)
     _limpar_janela()  # cada teste monta sua própria tela — sem sobras na Window
 
     from screens.player import PlayerScreen
@@ -195,13 +198,15 @@ def test_botoes_modo_normal_caem_dentro_do_video():
     print("  -> OK")
 
 
-def test_botoes_modo_cinema_caem_dentro_do_video_expandido():
-    """Ao entrar em modo cinema (tela cheia), os botões precisam continuar
-    dentro da nova área (agora maior) do vídeo — senão o usuário entra em
-    fullscreen e perde a capacidade de tocar nos controles."""
-    print("\n[4] botões: posição correta dentro do modo cinema")
+def test_modo_cinema_gira_pra_paisagem_e_botoes_continuam_no_video():
+    """Ao entrar em modo cinema, a tela deve GIRAR pra paisagem (um filme
+    ultra-wide cobre muito mais deitado) e o vídeo passa a cobrir a tela
+    inteira — com os botões do overlay ainda dentro da área tocável. Ao sair,
+    volta pro retrato."""
+    print("\n[4] modo cinema: gira pra paisagem, vídeo cobre a tela, botões dentro")
     screen = _build_screen()
     win_antes = tuple(Window.size)
+    assert win_antes[0] < win_antes[1], "o teste deve começar em retrato (w < h)"
 
     screen._toggle_fullscreen()
     for _ in range(4):
@@ -211,13 +216,18 @@ def test_botoes_modo_cinema_caem_dentro_do_video_expandido():
 
     vc = screen.video_container
     _fmt("video_container (cinema)", vc)
-    assert tuple(Window.size) == win_antes, "modo cinema não deve alterar Window.size"
+    print(f"  Window retrato: {win_antes}  ->  cinema: {tuple(Window.size)}")
     assert screen.is_fullscreen is True
+    # Agora o cinema GIRA: a janela vira paisagem (no celular quem gira é o
+    # Android; no PC simulamos trocando Window.size pra dar pra ver o layout).
+    # É o oposto exato do design antigo, que mantinha tudo em pé.
+    assert Window.width > Window.height, (
+        f"modo cinema deveria girar pra paisagem (w > h), mas Window.size é "
+        f"{tuple(Window.size)} — a tela continua em pé"
+    )
 
-    # Não basta o TAMANHO bater com a tela — a POSIÇÃO também precisa.
-    # (silenciosamente comparar só a altura deixa passar o vídeo do tamanho
-    # certo só que deslocado/pra fora da área visível — exatamente o jeito
-    # como esse bug já escapou de uma checagem mais fraca antes)
+    # vídeo cobre a tela toda — tamanho E posição (comparar só altura deixou
+    # passar antes um vídeo do tamanho certo só que deslocado pra fora da tela)
     tela = _retangulo_na_janela(screen._root)
     area = _retangulo_na_janela(vc)
     print(f"  tela visível (janela): x:{tela[0]:.1f}-{tela[2]:.1f}  y:{tela[1]:.1f}-{tela[3]:.1f}")
@@ -225,8 +235,7 @@ def test_botoes_modo_cinema_caem_dentro_do_video_expandido():
     assert all(abs(a - b) < 1.0 for a, b in zip(area, tela)), (
         f"em modo cinema o video_container deveria cobrir a tela toda, mas "
         f"na JANELA ele ocupa x:{area[0]:.1f}-{area[2]:.1f} y:{area[1]:.1f}-{area[3]:.1f} "
-        f"enquanto a tela visível é x:{tela[0]:.1f}-{tela[2]:.1f} y:{tela[1]:.1f}-{tela[3]:.1f} "
-        f"— o vídeo fica deslocado/cortado para fora da área visível"
+        f"enquanto a tela é x:{tela[0]:.1f}-{tela[2]:.1f} y:{tela[1]:.1f}-{tela[3]:.1f}"
     )
     _checar_botoes_dentro_da_area(screen, vc, "cinema")
 
@@ -235,7 +244,42 @@ def test_botoes_modo_cinema_caem_dentro_do_video_expandido():
         Clock.tick()
         screen._root.do_layout()
     assert screen.is_fullscreen is False
-    print("  -> OK (entra, posiciona botões certo, e volta)")
+    assert Window.width < Window.height, (
+        f"ao sair do cinema a tela deveria voltar pro retrato (w < h), "
+        f"mas ficou {tuple(Window.size)}"
+    )
+    print(f"  Window cinema -> saiu: {tuple(Window.size)} (retrato de novo)")
+    print("  -> OK (gira pra paisagem, cobre a tela, botões dentro, e volta)")
+
+
+def test_cinema_cobre_a_maior_parte_da_tela():
+    """Com a tela girada, o vídeo ultra-wide (2.39:1) deve cobrir a MAIOR
+    parte da tela — não a faixa fininha de quando ficava em pé. Mede com o
+    próprio algoritmo do Kivy (norm_image_size), usando uma textura fake só
+    com a proporção do filme."""
+    print("\n[8] modo cinema: vídeo ultra-wide cobre a maior parte da tela")
+    from kivy.graphics.texture import Texture
+    screen = _build_screen()
+    screen.video.texture = Texture.create(size=(1195, 500))  # 2.39:1, igual 1917
+
+    screen._toggle_fullscreen()
+    for _ in range(4):
+        Clock.tick()
+        screen._root.do_layout()
+        screen.video_container.do_layout()
+
+    nw, nh = screen.video.norm_image_size
+    area_video = screen.video.width * screen.video.height
+    cobertura = (nw * nh) / area_video * 100 if area_video else 0
+    print(f"  vídeo desenhado: {nw:.0f}x{nh:.0f}  | área do vídeo na tela: "
+          f"{screen.video.width:.0f}x{screen.video.height:.0f}  | cobre {cobertura:.1f}%")
+    assert cobertura >= 70, (
+        f"em paisagem o vídeo 2.39:1 deveria cobrir >=70% da tela, mas cobriu "
+        f"só {cobertura:.1f}% — a rotação não está ampliando (em pé seriam ~22%)"
+    )
+
+    screen._toggle_fullscreen()  # volta pro retrato
+    print(f"  -> OK (cobre {cobertura:.1f}% deitado, contra ~22% em pé)")
 
 
 def test_botao_play_pause_funciona():
@@ -322,10 +366,11 @@ if __name__ == "__main__":
         test_video_no_topo_info_logo_abaixo_sem_overlap_sem_gap,
         test_info_scroll_nao_reserva_vazio_gigante,
         test_botoes_modo_normal_caem_dentro_do_video,
-        test_botoes_modo_cinema_caem_dentro_do_video_expandido,
+        test_modo_cinema_gira_pra_paisagem_e_botoes_continuam_no_video,
         test_botao_play_pause_funciona,
         test_botao_voltar_funciona,
         test_botao_fullscreen_alterna_modo_cinema,
+        test_cinema_cobre_a_maior_parte_da_tela,
     ]
     resultados = [_run(t) for t in testes]
     print(f"\n{'='*60}\n{sum(resultados)}/{len(resultados)} passaram")
