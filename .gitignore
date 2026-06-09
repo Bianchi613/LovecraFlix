@@ -12,6 +12,8 @@ mobile/.emoji_cache/
 mobile/.buildozer/
 mobile/bin/
 
+mobile/tests/
+
 # Python
 __pycache__/
 *.pyc
