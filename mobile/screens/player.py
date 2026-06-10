@@ -100,15 +100,17 @@ class VideoContainer(RelativeLayout):
         if self._player.overlay.opacity == 0:
             self._player._show_overlay()
             return True
+        # NÃO agarrar o toque aqui. Antes fazíamos touch.grab(self) quando um
+        # filho tratava o toque — só que isso roubava os eventos de ARRASTO do
+        # slider de volume (o slider precisa receber os on_touch_move). Por isso
+        # o volume não mexia, principalmente no modo cinema. Deixa os controles
+        # tratarem o toque; o auto-ocultar é resolvido no on_touch_up.
         self._player._cancel_hide_timer()
-        handled = super().on_touch_down(touch)
-        if handled:
-            touch.grab(self)
+        super().on_touch_down(touch)
         return True
 
     def on_touch_up(self, touch):
-        if touch.grab_current is self:
-            touch.ungrab(self)
+        if self._player.overlay.opacity and self.collide_point(*touch.pos):
             self._player._reset_hide_timer()
         return super().on_touch_up(touch)
 
