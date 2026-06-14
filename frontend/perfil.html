@@ -205,6 +205,9 @@ async function init() {
   avatarSelecionado = u.avatar || "octopus";
   const av = AVATARES.find(a => a.id === avatarSelecionado) || AVATARES[0];
 
+  localStorage.setItem("lc_nome", u.nome);
+  localStorage.setItem("lc_avatar", avatarSelecionado);
+
   document.getElementById("inp-nome").value    = u.nome;
   document.getElementById("av-nome-display").textContent  = u.nome;
   document.getElementById("av-email-display").textContent = u.email;
