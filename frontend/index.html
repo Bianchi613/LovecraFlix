@@ -44,6 +44,11 @@
   <div class="hero-banner-dots" id="hero-dots"></div>
 </section>
 
+<section class="indicacoes-section" id="indicacoes-section" style="display:none">
+  <div class="section-title">Indicações para você</div>
+  <div class="indicacoes-row" id="indicacoes-row"></div>
+</section>
+
 <div class="layout">
   <aside>
     <h3>Gêneros</h3>
@@ -241,7 +246,45 @@ function mudarHero(delta) {
   mostrarHero((heroIdx + delta + len) % len, true);
 }
 
+// Indicações (ranking numerado)
+async function carregarIndicacoes() {
+  try {
+    const r = await fetch("/api/indicacoes", { headers: { "Authorization": `Bearer ${token}` } });
+    const data = await r.json();
+    if (!data.length) return;
+
+    const row = document.getElementById("indicacoes-row");
+    row.innerHTML = "";
+    data.forEach((f, i) => {
+      const item = document.createElement("div");
+      item.className = "indicacao-item";
+      item.onclick = () => location.href = `/player?id=${f.id}`;
+
+      const posterSrc = f.poster_hd || f.poster_local;
+      const posterHtml = posterSrc
+        ? `<img class="card-poster" src="/poster?path=${encodeURIComponent(posterSrc)}"
+               alt="${f.titulo_pt || f.titulo}" loading="lazy"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        : "";
+      const fallback = `<div class="card-poster-fallback" ${posterSrc ? 'style="display:none"' : ""}>🎬</div>`;
+
+      item.innerHTML = `
+        <div class="indicacao-numero">${i + 1}</div>
+        <div class="card indicacao-card">
+          ${posterHtml}${fallback}
+          <div class="card-info">
+            <div class="card-title">${f.titulo_pt || f.titulo || "Sem título"}</div>
+            <div class="card-year">${f.ano || ""} · ${f.genero || ""}</div>
+          </div>
+        </div>`;
+      row.appendChild(item);
+    });
+    document.getElementById("indicacoes-section").style.display = "block";
+  } catch {}
+}
+
 carregarHero();
+carregarIndicacoes();
 </script>
 <script src="/static/app.js"></script>
 </body>

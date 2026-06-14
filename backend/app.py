@@ -597,6 +597,59 @@ def detalhe_filme(id: int):
     return data
 
 
+@app.get("/api/indicacoes")
+def indicacoes(token: str = Depends(verificar_token)):
+    payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    conn = get_db()
+
+    user = conn.execute("SELECT id FROM usuarios WHERE email=?", (payload["sub"],)).fetchone()
+    uid  = user["id"] if user else None
+
+    generos_fav = []
+    if uid:
+        rows = conn.execute("""
+            SELECT f.genero, AVG(a.nota) as media
+            FROM avaliacoes a JOIN filmes f ON f.id = a.filme_id
+            WHERE a.usuario_id = ? AND a.nota >= 4
+            GROUP BY f.genero ORDER BY media DESC LIMIT 3
+        """, (uid,)).fetchall()
+        generos_fav = [r["genero"] for r in rows if r["genero"]]
+
+    genero_sql = ",".join(f"'{g}'" for g in generos_fav)
+
+    base_sql = """
+        SELECT DISTINCT f.id, f.titulo_pt, f.titulo, f.genero, f.ano, f.tipo,
+               f.poster_local, f.poster_hd,
+               COALESCE(a.nota, 0) as minha_nota
+        FROM filmes f
+        LEFT JOIN avaliacoes a ON a.filme_id = f.id AND a.usuario_id = ?
+        WHERE f.arquivo_novo IS NOT NULL AND f.tipo NOT IN ('serie','documentario')
+          AND (a.nota IS NULL OR a.nota >= 3)
+          {filtro_genero}
+        GROUP BY f.titulo_pt
+        ORDER BY RANDOM() LIMIT {limite}
+    """
+
+    resultado = []
+    if generos_fav:
+        resultado = list(conn.execute(
+            base_sql.format(filtro_genero=f"AND f.genero IN ({genero_sql})", limite=10),
+            (uid or 0,)
+        ).fetchall())
+
+    if len(resultado) < 10:
+        ja_ids = tuple(r["id"] for r in resultado) or (0,)
+        placeholders = ",".join("?" * len(ja_ids))
+        extra = conn.execute(
+            base_sql.format(filtro_genero=f"AND f.id NOT IN ({placeholders})", limite=10 - len(resultado)),
+            (uid or 0, *ja_ids)
+        ).fetchall()
+        resultado += list(extra)
+
+    conn.close()
+    return [dict(r) for r in resultado]
+
+
 @app.get("/api/recomendacoes")
 def recomendacoes(id: int, token: str = Depends(verificar_token)):
     payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
