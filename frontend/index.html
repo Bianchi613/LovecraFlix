@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LovecraFlix</title>
   <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Butcherman&family=Creepster&family=Nosifer&family=Pirata+One&family=Cinzel+Decorative:wght@700&family=Orbitron:wght@700&family=Bangers&family=Luckiest+Guy&family=MedievalSharp&family=Uncial+Antiqua&family=Playfair+Display:wght@700&family=Anton&family=Oswald:wght@600&family=Special+Elite&family=Black+Ops+One&family=Eater&family=Metal+Mania&family=New+Rocker&family=Rubik+Wet+Paint&family=Bungee&family=Audiowide&family=Press+Start+2P&family=Share+Tech+Mono&family=Mochiy+Pop+One&family=Fredericka+the+Great&family=Mountains+of+Christmas:wght@700&family=Pacifico&family=Fredoka:wght@600&family=Rye&family=Berkshire+Swash&family=Metamorphous&family=Sancreek&family=IM+Fell+English+SC&family=Courier+Prime:wght@700&family=Stardos+Stencil:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -23,6 +26,23 @@
     <button onclick="logout()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#8a7fa0;cursor:pointer;font-size:.82rem;padding:.35rem .8rem;transition:background .2s" onmouseover="this.style.background='rgba(255,255,255,.13)'" onmouseout="this.style.background='rgba(255,255,255,.07)'">Sair</button>
   </div>
 </header>
+
+<section class="hero-banner" id="hero-banner" style="display:none">
+  <div id="hero-bg-wrap"></div>
+  <div class="hero-banner-gradient"></div>
+  <div class="hero-arrow left" onclick="mudarHero(-1)">&#8249;</div>
+  <div class="hero-arrow right" onclick="mudarHero(1)">&#8250;</div>
+  <div class="hero-banner-content">
+    <h1 class="hero-banner-title" id="hero-title"></h1>
+    <div class="hero-banner-meta" id="hero-meta"></div>
+    <p class="hero-banner-synopsis" id="hero-synopsis"></p>
+    <div class="hero-banner-actions">
+      <button class="hero-btn hero-btn-play" id="hero-play-btn">▶ Assistir</button>
+      <button class="hero-btn hero-btn-info" id="hero-info-btn">ℹ Mais Info</button>
+    </div>
+  </div>
+  <div class="hero-banner-dots" id="hero-dots"></div>
+</section>
 
 <div class="layout">
   <aside>
@@ -68,6 +88,160 @@ function logout() {
   localStorage.removeItem("lc_nome");
   location.href = "/login";
 }
+
+// Hero de destaques
+let heroDestaques = [];
+let heroIdx   = 0;
+let heroTimer = null;
+
+async function carregarHero() {
+  try {
+    const r = await fetch("/api/destaques");
+    const data = await r.json();
+    heroDestaques = data.slice(0, 6);
+  } catch {
+    heroDestaques = [];
+  }
+  if (!heroDestaques.length) return;
+
+  const banner  = document.getElementById("hero-banner");
+  const bgWrap  = document.getElementById("hero-bg-wrap");
+  const dotsWrap = document.getElementById("hero-dots");
+  bgWrap.innerHTML   = "";
+  dotsWrap.innerHTML = "";
+
+  heroDestaques.forEach((d, i) => {
+    const bg = document.createElement("div");
+    bg.className = "hero-banner-bg";
+    bg.style.backgroundImage = `url("/poster?path=${encodeURIComponent(d.backdrop_hd || d.poster_hd || d.poster_local)}")`;
+    bgWrap.appendChild(bg);
+
+    const dot = document.createElement("div");
+    dot.className = "hero-dot";
+    dot.onclick = () => mostrarHero(i, true);
+    dotsWrap.appendChild(dot);
+  });
+
+  banner.style.display = "block";
+  mostrarHero(0);
+  heroTimer = setInterval(() => mostrarHero((heroIdx + 1) % heroDestaques.length), 8000);
+
+  // Recalcula o tamanho do título quando as fontes do Google Fonts terminarem de carregar
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(ajustarTituloAtual);
+  }
+}
+
+// Fonte/cor do título por subgênero (prioridade) — cada subgênero da taxonomia tem a sua
+const SUBGENERO_FONTE = {
+  "horror cosmico":         "font-cinzel",
+  "alienigenas":            "font-nosifer",
+  "zumbi":                  "font-eater",
+  "vampiro":                "font-metalmania",
+  "possessao":              "font-newrocker",
+  "slasher":                "font-wetpaint",
+  "distopia":               "font-bungee",
+  "espacial":               "font-audiowide",
+  "viagem no tempo":        "font-pressstart",
+  "inteligencia artificial":"font-sharetech",
+  "anime":                  "font-mochiy",
+  "musical":                "font-fredericka",
+  "natal":                  "font-xmas",
+  "comedia romantica":      "font-pacifico",
+  "comedia adolescente":    "font-fredoka",
+  "comedia negra":          "font-rye",
+  "conto de fadas":         "font-berkshire",
+  "espada e magia":         "font-metamorphous",
+  "piratas":                "font-sancreek",
+  "arqueologia":            "font-imfell",
+  "baseado em fatos reais": "font-courier",
+  "drama de guerra":        "font-stardos",
+};
+
+// Fonte/cor do título por gênero — usada quando não há subgênero com estilo próprio
+const GENERO_FONTE = {
+  "terror":            "font-creepster",
+  "ficcao cientifica": "font-orbitron",
+  "animacao":          "font-bangers",
+  "comedia":           "font-luckiest",
+  "fantasia":          "font-medieval",
+  "aventura":          "font-uncial",
+  "drama":             "font-playfair",
+  "acao":              "font-anton",
+  "documentario":      "font-oswald",
+  "crime":             "font-special-elite",
+  "guerra":            "font-blackops",
+  "suspense":          "font-butcherman",
+  "misterio":          "font-pirata",
+};
+
+// Escolhe a fonte estilizada do título: subgênero > gênero > padrão
+function fonteHero(genero, subgenero) {
+  const norm = s => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  return SUBGENERO_FONTE[norm(subgenero)] || GENERO_FONTE[norm(genero)] || "";
+}
+
+// Calcula o tamanho de fonte do título medindo o texto real com a fonte escolhida,
+// para que a maior palavra caiba na largura disponível e o título nunca seja truncado.
+function calcularTamanhoTitulo(titulo, fontFamily, containerWidth) {
+  const TEST = 100, MAX = 80, MIN = 26, TARGET_LINES = 2.2;
+  if (!calcularTamanhoTitulo._ctx) {
+    calcularTamanhoTitulo._ctx = document.createElement("canvas").getContext("2d");
+  }
+  const ctx = calcularTamanhoTitulo._ctx;
+  ctx.font = `400 ${TEST}px ${fontFamily}`;
+
+  let wPalavra = 0;
+  titulo.trim().split(/\s+/).forEach(p => { wPalavra = Math.max(wPalavra, ctx.measureText(p).width); });
+  const wTotal = ctx.measureText(titulo).width;
+
+  const porPalavra = wPalavra ? containerWidth / wPalavra * TEST : MAX;
+  const porTotal   = wTotal   ? containerWidth * TARGET_LINES / wTotal * TEST : MAX;
+
+  return Math.round(Math.max(MIN, Math.min(MAX, porPalavra, porTotal)));
+}
+
+// Reaplica o tamanho calculado ao título atualmente exibido (ex: após as fontes carregarem)
+function ajustarTituloAtual() {
+  const titleEl = document.getElementById("hero-title");
+  const titulo = titleEl.textContent || "";
+  if (!titulo) return;
+  const fontFamily = getComputedStyle(titleEl).fontFamily;
+  const containerWidth = titleEl.clientWidth || 900;
+  titleEl.style.fontSize = calcularTamanhoTitulo(titulo, fontFamily, containerWidth) + "px";
+}
+
+function mostrarHero(i, manual) {
+  heroIdx = i;
+  const d = heroDestaques[i];
+
+  document.querySelectorAll(".hero-banner-bg").forEach((el, idx) => el.classList.toggle("active", idx === i));
+  document.querySelectorAll(".hero-dot").forEach((el, idx) => el.classList.toggle("active", idx === i));
+
+  const titleEl = document.getElementById("hero-title");
+  const titulo = d.titulo_pt || "";
+  titleEl.textContent = titulo;
+  titleEl.className = `hero-banner-title ${fonteHero(d.genero, d.subgenero)}`;
+  ajustarTituloAtual();
+
+  document.getElementById("hero-meta").textContent     = [d.ano, d.genero].filter(Boolean).join("  ·  ");
+  document.getElementById("hero-synopsis").textContent = d.sinopse || "";
+  document.getElementById("hero-play-btn").onclick = () => location.href = `/player?id=${d.id}`;
+  document.getElementById("hero-info-btn").onclick = () => location.href = `/filme?titulo=${encodeURIComponent(d.titulo_pt)}`;
+
+  if (manual) {
+    clearInterval(heroTimer);
+    heroTimer = setInterval(() => mostrarHero((heroIdx + 1) % heroDestaques.length), 8000);
+  }
+}
+
+function mudarHero(delta) {
+  const len = heroDestaques.length;
+  if (!len) return;
+  mostrarHero((heroIdx + delta + len) % len, true);
+}
+
+carregarHero();
 </script>
 <script src="/static/app.js"></script>
 </body>

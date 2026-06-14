@@ -1,5 +1,5 @@
 """LovecraFlix - Servidor local"""
-import asyncio, json, re, sqlite3
+import asyncio, json, random, re, sqlite3
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse, JSONResponse, RedirectResponse
@@ -46,6 +46,21 @@ def get_db():
     colunas = [r[1] for r in conn.execute("PRAGMA table_info(filmes)").fetchall()]
     if "parte" not in colunas:
         conn.execute("ALTER TABLE filmes ADD COLUMN parte INTEGER DEFAULT NULL")
+        conn.commit()
+
+    # Migração: adiciona coluna poster_hd se não existir
+    if "poster_hd" not in colunas:
+        conn.execute("ALTER TABLE filmes ADD COLUMN poster_hd TEXT")
+        conn.commit()
+
+    # Migração: adiciona coluna backdrop_hd se não existir
+    if "backdrop_hd" not in colunas:
+        conn.execute("ALTER TABLE filmes ADD COLUMN backdrop_hd TEXT")
+        conn.commit()
+
+    # Migração: adiciona coluna tmdb_keywords se não existir
+    if "tmdb_keywords" not in colunas:
+        conn.execute("ALTER TABLE filmes ADD COLUMN tmdb_keywords TEXT")
         conn.commit()
 
     conn.execute("""
@@ -100,17 +115,17 @@ def destaques():
     conn = get_db()
     # Horror Cósmico primeiro, depois os demais aleatórios
     horror = conn.execute("""
-        SELECT id, titulo_pt, ano, genero, poster_local
+        SELECT id, titulo_pt, ano, genero, subgenero, sinopse, poster_local, poster_hd, backdrop_hd
         FROM filmes
         WHERE subgenero = 'Horror Cosmico'
           AND poster_local IS NOT NULL
           AND poster_local NOT LIKE '%_organizer%'
           AND arquivo_novo IS NOT NULL
         GROUP BY titulo_pt
-        ORDER BY RANDOM()
+        ORDER BY RANDOM() LIMIT 3
     """).fetchall()
     outros = conn.execute("""
-        SELECT id, titulo_pt, ano, genero, poster_local
+        SELECT id, titulo_pt, ano, genero, subgenero, sinopse, poster_local, poster_hd, backdrop_hd
         FROM filmes
         WHERE (subgenero IS NULL OR subgenero != 'Horror Cosmico')
           AND poster_local IS NOT NULL
@@ -122,6 +137,7 @@ def destaques():
     """).fetchall()
     conn.close()
     resultado = list(horror) + list(outros)
+    random.shuffle(resultado)
     return [dict(r) for r in resultado if Path(r["poster_local"]).exists()]
 
 @app.get("/login", response_class=HTMLResponse)

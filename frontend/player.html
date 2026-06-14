@@ -75,6 +75,139 @@
       padding: .6rem 1.5rem; transition: background .2s;
     }
     .rec-back-btn:hover { background: rgba(255,255,255,.13); }
+
+    /* ── Spinner de loading/buffering ── */
+    .player-loading {
+      display: none; position: absolute; inset: 0; z-index: 12;
+      align-items: center; justify-content: center;
+      background: rgba(5,5,12,.35); pointer-events: none;
+    }
+    .player-loading.show { display: flex; }
+    .spinner {
+      width: 48px; height: 48px; border-radius: 50%;
+      border: 4px solid rgba(255,255,255,.2);
+      border-top-color: var(--accent);
+      animation: cc-spin .8s linear infinite;
+    }
+    @keyframes cc-spin { to { transform: rotate(360deg); } }
+
+    /* ── Barra de controles customizada ── */
+    .player-wrap.cc-hide-cursor { cursor: none; }
+
+    .custom-controls {
+      position: absolute; left: 0; right: 0; bottom: 0; z-index: 15;
+      padding: 1.5rem 1rem .6rem;
+      background: linear-gradient(to top, rgba(5,5,12,.92) 0%, rgba(5,5,12,.55) 55%, transparent 100%);
+      opacity: 0; transform: translateY(8px); pointer-events: none;
+      transition: opacity .25s ease, transform .25s ease;
+    }
+    .player-wrap:hover .custom-controls,
+    .custom-controls.cc-visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    .custom-controls.cc-force-hide { opacity: 0 !important; pointer-events: none !important; }
+
+    /* Linha de progresso */
+    .cc-progress-row { display: flex; align-items: center; gap: .6rem; margin-bottom: .35rem; }
+    .cc-time {
+      font-size: .78rem; color: var(--text);
+      font-variant-numeric: tabular-nums;
+      min-width: 4.2em; text-align: center; flex-shrink: 0;
+    }
+    .cc-progress-track {
+      position: relative; flex: 1; height: 5px;
+      background: rgba(255,255,255,.18); border-radius: 3px; cursor: pointer;
+      transition: height .12s ease;
+    }
+    .cc-progress-track:hover, .cc-progress-track.cc-dragging { height: 8px; }
+    .cc-progress-buffered, .cc-progress-filled {
+      position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; width: 0%;
+    }
+    .cc-progress-buffered { background: rgba(255,255,255,.3); }
+    .cc-progress-filled { background: var(--accent); }
+    .cc-progress-handle {
+      position: absolute; top: 50%; left: 0%;
+      width: 12px; height: 12px; border-radius: 50%; background: var(--accent);
+      transform: translate(-50%, -50%) scale(0);
+      transition: transform .12s ease;
+      box-shadow: 0 0 6px rgba(123,45,139,.8);
+    }
+    .cc-progress-track:hover .cc-progress-handle,
+    .cc-progress-track.cc-dragging .cc-progress-handle { transform: translate(-50%, -50%) scale(1); }
+
+    /* Linha de botões */
+    .cc-buttons-row { display: flex; align-items: center; justify-content: space-between; gap: .25rem; }
+    .cc-group { display: flex; align-items: center; gap: .15rem; }
+    .cc-btn {
+      background: none; border: none; cursor: pointer; color: var(--text);
+      display: flex; align-items: center; justify-content: center;
+      width: 38px; height: 38px; border-radius: 6px; position: relative;
+      transition: background .15s, color .15s;
+    }
+    .cc-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .cc-btn.active { color: var(--accent); }
+    .cc-icon { font-size: 1.15rem; line-height: 1; }
+    .cc-icon svg { width: 22px; height: 22px; display: block; fill: currentColor; }
+
+    .cc-cc-icon {
+      font-size: .72rem; font-weight: 800;
+      border: 1.5px solid currentColor; border-radius: 3px; padding: 1px 3px; line-height: 1.1;
+    }
+    #cc-subtitles.active .cc-cc-icon { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* Volume */
+    .cc-volume-group {
+      display: flex; align-items: center; overflow: hidden;
+      max-width: 38px; transition: max-width .25s ease;
+    }
+    .cc-volume-group:hover, .cc-volume-group.cc-active { max-width: 140px; }
+    .cc-volume-slider {
+      width: 90px; margin-left: .4rem; accent-color: var(--accent);
+      height: 4px; cursor: pointer;
+    }
+
+    /* Menu de configurações */
+    .cc-settings-wrap { position: relative; }
+    .cc-settings-menu {
+      display: none; position: absolute; bottom: calc(100% + 8px); right: 0;
+      background: rgba(17,17,24,.97); border: 1px solid rgba(255,255,255,.1);
+      border-radius: 8px; padding: .4rem; min-width: 180px; max-height: 260px;
+      overflow-y: auto; font-size: .85rem; box-shadow: 0 8px 24px rgba(0,0,0,.6);
+    }
+    .cc-settings-menu.show { display: block; }
+    .cc-settings-section { padding: .3rem .5rem; }
+    .cc-settings-section + .cc-settings-section {
+      border-top: 1px solid rgba(255,255,255,.08); margin-top: .25rem;
+    }
+    .cc-settings-label {
+      font-size: .7rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 1px; margin-bottom: .35rem;
+    }
+    .cc-settings-option {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: .35rem .5rem; border-radius: 5px; cursor: pointer;
+      transition: background .12s;
+    }
+    .cc-settings-option:hover { background: rgba(255,255,255,.08); }
+    .cc-settings-option.active { color: var(--accent); font-weight: 700; }
+
+    /* Fullscreen */
+    .player-wrap:fullscreen, .player-wrap:-webkit-full-screen { width: 100vw; height: 100vh; }
+    .player-wrap:fullscreen video, .player-wrap:-webkit-full-screen video {
+      max-height: 100vh; height: 100%;
+    }
+    .player-wrap:fullscreen .custom-controls,
+    .player-wrap:-webkit-full-screen .custom-controls { padding: 0 2rem 1.2rem; }
+
+    /* Responsivo */
+    @media (max-width: 640px) {
+      .custom-controls { padding: 0 .5rem .5rem; }
+      .cc-btn { width: 32px; height: 32px; }
+      .cc-icon { font-size: 1rem; }
+      .cc-icon svg { width: 18px; height: 18px; }
+      .cc-time { font-size: .68rem; min-width: 3.6em; }
+      #cc-restart { display: none; }
+      .cc-volume-group { display: none; }
+      .cc-settings-menu { min-width: 160px; font-size: .8rem; }
+    }
   </style>
 </head>
 <script>if (!localStorage.getItem("lc_token")) location.href = "/home";</script>
@@ -82,7 +215,72 @@
 
 <div class="player-wrap" id="player-wrap">
   <button class="player-back back-btn" onclick="history.back()">← Voltar</button>
-  <video id="player" controls preload="metadata"></video>
+  <video id="player" preload="metadata"></video>
+
+  <!-- Spinner de buffering/loading -->
+  <div class="player-loading" id="player-loading"><div class="spinner"></div></div>
+
+  <!-- Barra de controles customizada -->
+  <div class="custom-controls" id="custom-controls">
+    <div class="cc-progress-row">
+      <span class="cc-time" id="cc-current-time">00:00:00</span>
+      <div class="cc-progress-track" id="cc-progress-track">
+        <div class="cc-progress-buffered" id="cc-progress-buffered"></div>
+        <div class="cc-progress-filled" id="cc-progress-filled"></div>
+        <div class="cc-progress-handle" id="cc-progress-handle"></div>
+      </div>
+      <span class="cc-time" id="cc-duration">00:00:00</span>
+    </div>
+
+    <div class="cc-buttons-row">
+      <div class="cc-group cc-group-left">
+        <button class="cc-btn" id="cc-play-pause" title="Play/Pause" aria-label="Play/Pause">
+          <span class="cc-icon">▶</span>
+        </button>
+        <button class="cc-btn" id="cc-restart" title="Reiniciar" aria-label="Reiniciar do início">
+          <span class="cc-icon">↺</span>
+        </button>
+        <button class="cc-btn" id="cc-back10" title="Voltar 10s" aria-label="Voltar 10 segundos">
+          <span class="cc-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              <text x="12" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor">10</text>
+            </svg>
+          </span>
+        </button>
+        <button class="cc-btn" id="cc-fwd10" title="Avançar 10s" aria-label="Avançar 10 segundos">
+          <span class="cc-icon">
+            <svg viewBox="0 0 24 24" style="transform:scaleX(-1)"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              <text x="12" y="17" text-anchor="middle" font-size="7" font-weight="700" fill="currentColor" style="transform:scaleX(-1)" transform-origin="12 14">10</text>
+            </svg>
+          </span>
+        </button>
+        <div class="cc-volume-group" id="cc-volume-group">
+          <button class="cc-btn" id="cc-mute" title="Mudo" aria-label="Ativar/desativar volume">
+            <span class="cc-icon" id="cc-volume-icon">🔊</span>
+          </button>
+          <input type="range" class="cc-volume-slider" id="cc-volume-slider" min="0" max="1" step="0.01" value="1" aria-label="Volume">
+        </div>
+      </div>
+
+      <div class="cc-group cc-group-right">
+        <button class="cc-btn" id="cc-subtitles" title="Legendas" aria-label="Alternar legendas" style="display:none">
+          <span class="cc-icon cc-cc-icon">CC</span>
+        </button>
+        <div class="cc-settings-wrap">
+          <button class="cc-btn" id="cc-settings" title="Configurações" aria-label="Configurações">
+            <span class="cc-icon">⚙</span>
+          </button>
+          <div class="cc-settings-menu" id="cc-settings-menu"></div>
+        </div>
+        <button class="cc-btn" id="cc-pip" title="Picture-in-Picture" aria-label="Picture-in-Picture">
+          <span class="cc-icon">⧉</span>
+        </button>
+        <button class="cc-btn" id="cc-fullscreen" title="Tela cheia" aria-label="Tela cheia">
+          <span class="cc-icon">⛶</span>
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Overlay fim de episódio (auto-play) -->
   <div class="end-overlay" id="overlay-autoplay">
@@ -135,9 +333,9 @@ function trocarAudio(faixa) {
     if (!pausado) video.play();
   }, { once: true });
 
-  // Atualiza visual dos botões
-  document.querySelectorAll(".audio-btn").forEach(b => {
-    b.classList.toggle("active", parseInt(b.dataset.faixa) === faixa);
+  // Atualiza visual das opções no menu de configurações
+  document.querySelectorAll("#cc-settings-menu [data-audio]").forEach(b => {
+    b.classList.toggle("active", parseInt(b.dataset.audio) === faixa);
   });
 }
 
@@ -152,11 +350,13 @@ function irProximo() {
 function cancelarAutoplay() {
   clearInterval(countdownTimer);
   document.getElementById("overlay-autoplay").classList.remove("show");
+  document.getElementById("custom-controls").classList.remove("cc-force-hide");
   document.getElementById("player").play();
 }
 
 function iniciarAutoplay() {
   const overlay = document.getElementById("overlay-autoplay");
+  document.getElementById("custom-controls").classList.add("cc-force-hide");
   document.getElementById("ap-titulo").textContent = decodeURIComponent(nextTitulo);
   overlay.classList.add("show");
   countdownVal = 10;
@@ -169,6 +369,7 @@ function iniciarAutoplay() {
 }
 
 async function mostrarRecomendacoes() {
+  document.getElementById("custom-controls").classList.add("cc-force-hide");
   const token = localStorage.getItem("lc_token");
   const r    = await fetch(`/api/recomendacoes?id=${filmeId}`,
     { headers: { Authorization: `Bearer ${token}` } });
@@ -280,13 +481,11 @@ async function load() {
       ${f.tmdb_url ? `<a href="${f.tmdb_url}" target="_blank" class="tmdb-link">TMDB ↗</a>` : ""}
     </div>
     ${f.sinopse ? `<p class="player-synopsis">${f.sinopse}</p>` : ""}
-    ${(f.idioma || "").toLowerCase().includes("dual") ? `
-    <div style="display:flex;align-items:center;gap:.6rem;margin-top:1rem">
-      <span style="font-size:.82rem;color:var(--muted)">Áudio:</span>
-      <button class="audio-btn active" data-faixa="0" onclick="trocarAudio(0)">🇧🇷 Português</button>
-      <button class="audio-btn"        data-faixa="1" onclick="trocarAudio(1)">🇬🇧 Original</button>
-    </div>` : ""}
   `;
+
+  // Configura legendas (CC) e menu de configurações
+  setupSubtitlesToggle();
+  montarMenuConfiguracoes(f);
 
   // Carrega avaliação do usuário
   carregarEstrelas(filmeId);
@@ -346,6 +545,310 @@ async function carregarEstrelas(fid) {
   });
 }
 
+// ── Barra de controles customizada ──────────────────────────────────────────
+
+function formatTime(seconds) {
+  if (!isFinite(seconds) || seconds < 0) seconds = 0;
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  return [h, m, s].map(v => String(v).padStart(2, "0")).join(":");
+}
+
+function setupPlayPause() {
+  const video = document.getElementById("player");
+  const btn   = document.getElementById("cc-play-pause");
+
+  const updateIcon = () => {
+    btn.querySelector(".cc-icon").textContent = video.paused ? "▶" : "⏸";
+  };
+  btn.addEventListener("click", () => video.paused ? video.play() : video.pause());
+  video.addEventListener("play", updateIcon);
+  video.addEventListener("pause", updateIcon);
+  video.addEventListener("click", () => video.paused ? video.play() : video.pause());
+}
+
+function setupSkipButtons() {
+  const video = document.getElementById("player");
+  document.getElementById("cc-restart").addEventListener("click", () => {
+    video.currentTime = 0;
+    if (video.paused) video.play();
+  });
+  document.getElementById("cc-back10").addEventListener("click", () => {
+    video.currentTime = Math.max(0, video.currentTime - 10);
+  });
+  document.getElementById("cc-fwd10").addEventListener("click", () => {
+    video.currentTime = Math.min(video.duration || Infinity, video.currentTime + 10);
+  });
+}
+
+function setupProgressBar() {
+  const video    = document.getElementById("player");
+  const track    = document.getElementById("cc-progress-track");
+  const filled   = document.getElementById("cc-progress-filled");
+  const buffered = document.getElementById("cc-progress-buffered");
+  const handle   = document.getElementById("cc-progress-handle");
+  const curEl    = document.getElementById("cc-current-time");
+  const durEl    = document.getElementById("cc-duration");
+
+  let dragging = false;
+
+  const updateUI = () => {
+    const dur = video.duration || 0;
+    const pct = dur ? (video.currentTime / dur) * 100 : 0;
+    filled.style.width = pct + "%";
+    handle.style.left  = pct + "%";
+    curEl.textContent  = formatTime(video.currentTime);
+    if (dur) durEl.textContent = formatTime(dur);
+
+    if (video.buffered.length) {
+      const end = video.buffered.end(video.buffered.length - 1);
+      buffered.style.width = (dur ? (end / dur) * 100 : 0) + "%";
+    }
+  };
+
+  video.addEventListener("timeupdate", () => { if (!dragging) updateUI(); });
+  video.addEventListener("loadedmetadata", updateUI);
+  video.addEventListener("progress", updateUI);
+
+  const seekFromEvent = (clientX) => {
+    const rect = track.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    return ratio * (video.duration || 0);
+  };
+
+  track.addEventListener("pointerdown", (e) => {
+    dragging = true;
+    track.classList.add("cc-dragging");
+    const t = seekFromEvent(e.clientX);
+    const pct = (t / (video.duration || 1)) * 100;
+    filled.style.width = pct + "%";
+    handle.style.left  = pct + "%";
+    curEl.textContent = formatTime(t);
+    track.setPointerCapture(e.pointerId);
+  });
+  track.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const t = seekFromEvent(e.clientX);
+    const pct = (t / (video.duration || 1)) * 100;
+    filled.style.width = pct + "%";
+    handle.style.left  = pct + "%";
+    curEl.textContent = formatTime(t);
+  });
+  const endDrag = (e) => {
+    if (!dragging) return;
+    dragging = false;
+    track.classList.remove("cc-dragging");
+    video.currentTime = seekFromEvent(e.clientX);
+  };
+  track.addEventListener("pointerup", endDrag);
+  track.addEventListener("pointercancel", endDrag);
+}
+
+function setupVolume() {
+  const video   = document.getElementById("player");
+  const muteBtn = document.getElementById("cc-mute");
+  const slider  = document.getElementById("cc-volume-slider");
+  const group   = document.getElementById("cc-volume-group");
+  const icon    = document.getElementById("cc-volume-icon");
+
+  const updateIcon = () => {
+    icon.textContent = video.muted || video.volume === 0 ? "🔇"
+      : video.volume < 0.5 ? "🔉" : "🔊";
+  };
+
+  slider.addEventListener("input", () => {
+    video.volume = parseFloat(slider.value);
+    video.muted  = video.volume === 0;
+    updateIcon();
+  });
+
+  muteBtn.addEventListener("click", () => {
+    video.muted = !video.muted;
+    if (!video.muted && video.volume === 0) { video.volume = 1; slider.value = 1; }
+    updateIcon();
+    if (window.matchMedia("(hover: none)").matches) {
+      group.classList.toggle("cc-active");
+    }
+  });
+
+  updateIcon();
+}
+
+function setupSubtitlesToggle() {
+  const video = document.getElementById("player");
+  const btn   = document.getElementById("cc-subtitles");
+
+  if (video.textTracks.length === 0) { btn.style.display = "none"; return; }
+
+  btn.style.display = "flex";
+  const track = video.textTracks[0];
+  track.mode = "showing";
+  btn.classList.add("active");
+
+  btn.onclick = () => {
+    const showing = track.mode === "showing";
+    track.mode = showing ? "hidden" : "showing";
+    btn.classList.toggle("active", !showing);
+  };
+}
+
+function montarMenuConfiguracoes(f) {
+  const menu = document.getElementById("cc-settings-menu");
+  const isDual = (f.idioma || "").toLowerCase().includes("dual");
+  const video = document.getElementById("player");
+
+  menu.innerHTML = `
+    <div class="cc-settings-section">
+      <div class="cc-settings-label">Velocidade</div>
+      ${[0.5, 0.75, 1, 1.25, 1.5, 2].map(r => `
+        <div class="cc-settings-option ${r === 1 ? 'active' : ''}" data-speed="${r}">
+          <span>${r === 1 ? "Normal" : r + "x"}</span>
+        </div>`).join("")}
+    </div>
+    ${isDual ? `
+    <div class="cc-settings-section">
+      <div class="cc-settings-label">Áudio</div>
+      <div class="cc-settings-option active" data-audio="0">
+        <span>🇧🇷 Português</span>
+      </div>
+      <div class="cc-settings-option" data-audio="1">
+        <span>🇬🇧 Original</span>
+      </div>
+    </div>` : ""}
+  `;
+
+  menu.querySelectorAll("[data-speed]").forEach(opt => {
+    opt.addEventListener("click", () => {
+      video.playbackRate = parseFloat(opt.dataset.speed);
+      menu.querySelectorAll("[data-speed]").forEach(o => o.classList.remove("active"));
+      opt.classList.add("active");
+    });
+  });
+
+  menu.querySelectorAll("[data-audio]").forEach(opt => {
+    opt.addEventListener("click", () => {
+      trocarAudio(parseInt(opt.dataset.audio));
+    });
+  });
+}
+
+function setupSettingsMenu() {
+  const btn  = document.getElementById("cc-settings");
+  const menu = document.getElementById("cc-settings-menu");
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    menu.classList.toggle("show");
+  });
+  document.addEventListener("click", (e) => {
+    if (!menu.contains(e.target) && e.target !== btn) menu.classList.remove("show");
+  });
+}
+
+function setupPip() {
+  const video = document.getElementById("player");
+  const btn   = document.getElementById("cc-pip");
+
+  if (!document.pictureInPictureEnabled) {
+    btn.style.display = "none";
+    return;
+  }
+
+  btn.addEventListener("click", async () => {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else {
+        await video.requestPictureInPicture();
+      }
+    } catch (err) {
+      console.warn("PiP indisponível:", err);
+    }
+  });
+
+  video.addEventListener("enterpictureinpicture", () => btn.classList.add("active"));
+  video.addEventListener("leavepictureinpicture", () => btn.classList.remove("active"));
+}
+
+function setupFullscreen() {
+  const wrap = document.getElementById("player-wrap");
+  const btn  = document.getElementById("cc-fullscreen");
+
+  const requestFs = wrap.requestFullscreen || wrap.webkitRequestFullscreen;
+  if (!requestFs) { btn.style.display = "none"; return; }
+
+  btn.addEventListener("click", () => {
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+    if (!isFs) {
+      requestFs.call(wrap);
+    } else {
+      (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    }
+  });
+
+  const updateState = () => {
+    const isFs = document.fullscreenElement || document.webkitFullscreenElement;
+    btn.classList.toggle("active", !!isFs);
+  };
+  document.addEventListener("fullscreenchange", updateState);
+  document.addEventListener("webkitfullscreenchange", updateState);
+}
+
+function setupAutoHide() {
+  const wrap  = document.getElementById("player-wrap");
+  const video = document.getElementById("player");
+  const cc    = document.getElementById("custom-controls");
+
+  let hideTimer = null;
+
+  const show = () => {
+    cc.classList.add("cc-visible");
+    wrap.classList.remove("cc-hide-cursor");
+    clearTimeout(hideTimer);
+    if (!video.paused) {
+      hideTimer = setTimeout(() => {
+        cc.classList.remove("cc-visible");
+        wrap.classList.add("cc-hide-cursor");
+        document.getElementById("cc-settings-menu").classList.remove("show");
+      }, 3000);
+    }
+  };
+
+  wrap.addEventListener("mousemove", show);
+  wrap.addEventListener("mouseenter", show);
+  wrap.addEventListener("click", show);
+  wrap.addEventListener("touchstart", show);
+
+  video.addEventListener("pause", () => { clearTimeout(hideTimer); show(); });
+  video.addEventListener("play", show);
+
+  show();
+}
+
+function setupLoadingSpinner() {
+  const video   = document.getElementById("player");
+  const loading = document.getElementById("player-loading");
+
+  video.addEventListener("waiting", () => loading.classList.add("show"));
+  video.addEventListener("seeking", () => loading.classList.add("show"));
+  video.addEventListener("playing", () => loading.classList.remove("show"));
+  video.addEventListener("canplay", () => loading.classList.remove("show"));
+  video.addEventListener("seeked", () => loading.classList.remove("show"));
+}
+
+function initCustomControls() {
+  setupPlayPause();
+  setupSkipButtons();
+  setupProgressBar();
+  setupVolume();
+  setupSettingsMenu();
+  setupPip();
+  setupFullscreen();
+  setupAutoHide();
+  setupLoadingSpinner();
+}
+
+initCustomControls();
 load();
 </script>
 </body>

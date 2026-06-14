@@ -190,6 +190,9 @@ LovecraftianFlix/
 | `tem_legenda` | INTEGER | `1` se houver `.srt` junto |
 | `arquivo_novo` | TEXT | Caminho absoluto para o vídeo |
 | `poster_local` | TEXT | Caminho absoluto para o `.jpg` |
+| `poster_hd` | TEXT | Caminho absoluto para o pôster em alta resolução (w1280, TMDB) |
+| `backdrop_hd` | TEXT | Caminho absoluto para a imagem de fundo paisagem em alta resolução (w1280, TMDB) |
+| `tmdb_keywords` | TEXT | Keywords do TMDB em minúsculas, separadas por vírgula (cache usado para classificar `subgenero`) |
 | `sinopse` | TEXT | Sinopse |
 | `tmdb_url` | TEXT | Link TMDB |
 

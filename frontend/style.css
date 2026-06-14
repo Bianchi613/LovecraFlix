@@ -61,6 +61,348 @@ select {
 select:focus { border-color: var(--accent); }
 select option { background: #1a1a2e; }
 
+/* ── Hero banner (destaque) ── */
+.hero-banner {
+  position: relative;
+  height: 85vh; min-height: 540px; max-height: 920px;
+  overflow: hidden; background: linear-gradient(135deg, var(--surface), var(--bg));
+  box-shadow: inset 0 0 120px 40px rgba(0,0,0,.6);
+}
+.hero-banner-bg {
+  position: absolute; inset: 0; z-index: 0;
+  background-size: cover; background-position: center;
+  opacity: 0; transition: opacity 1.2s ease;
+}
+.hero-banner-bg.active { opacity: 1; }
+.hero-banner-gradient {
+  position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background:
+    linear-gradient(90deg, rgba(10,10,15,.97) 0%, rgba(10,10,15,.55) 45%, rgba(10,10,15,.05) 75%),
+    linear-gradient(to top, rgba(10,10,15,.9) 0%, rgba(10,10,15,0) 45%);
+}
+.hero-banner-content {
+  position: absolute; left: 0; top: 50%; transform: translateY(-50%); z-index: 3;
+  max-width: 620px; padding: 2.5rem 3rem 2.75rem;
+}
+.hero-banner-title {
+  font-size: clamp(1.75rem, 5vw, 4rem);
+  font-weight: 400; line-height: 1.15;
+  background: linear-gradient(135deg, #b06fcc, #e74c3c);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 14px rgba(123,45,139,.4));
+  margin-bottom: .4rem;
+  overflow-wrap: break-word;
+  width: min(90vw, 1200px);
+  max-width: none;
+}
+.font-butcherman   { font-family: "Butcherman", cursive; }
+.font-creepster    { font-family: "Creepster", cursive; }
+.font-nosifer      { font-family: "Nosifer", cursive; }
+.font-pirata       { font-family: "Pirata One", cursive; }
+.font-cinzel       { font-family: "Cinzel Decorative", serif; }
+.font-orbitron     { font-family: "Orbitron", sans-serif; font-weight: 700; }
+.font-bangers      { font-family: "Bangers", cursive; }
+.font-luckiest     { font-family: "Luckiest Guy", cursive; }
+.font-medieval     { font-family: "MedievalSharp", cursive; }
+.font-uncial       { font-family: "Uncial Antiqua", cursive; }
+.font-playfair     { font-family: "Playfair Display", serif; font-weight: 700; }
+.font-anton        { font-family: "Anton", sans-serif; }
+.font-oswald       { font-family: "Oswald", sans-serif; font-weight: 600; }
+.font-special-elite{ font-family: "Special Elite", cursive; }
+.font-blackops     { font-family: "Black Ops One", cursive; }
+.font-eater        { font-family: "Eater", cursive; }
+.font-metalmania   { font-family: "Metal Mania", cursive; }
+.font-newrocker    { font-family: "New Rocker", cursive; }
+.font-wetpaint     { font-family: "Rubik Wet Paint", cursive; }
+.font-bungee       { font-family: "Bungee", sans-serif; }
+.font-audiowide    { font-family: "Audiowide", sans-serif; }
+.font-pressstart   { font-family: "Press Start 2P", monospace; }
+.font-sharetech    { font-family: "Share Tech Mono", monospace; }
+.font-mochiy       { font-family: "Mochiy Pop One", sans-serif; }
+.font-fredericka   { font-family: "Fredericka the Great", cursive; }
+.font-xmas         { font-family: "Mountains of Christmas", cursive; font-weight: 700; }
+.font-pacifico     { font-family: "Pacifico", cursive; }
+.font-fredoka      { font-family: "Fredoka", sans-serif; font-weight: 600; }
+.font-rye          { font-family: "Rye", cursive; }
+.font-berkshire    { font-family: "Berkshire Swash", cursive; }
+.font-metamorphous { font-family: "Metamorphous", serif; }
+.font-sancreek     { font-family: "Sancreek", cursive; }
+.font-imfell       { font-family: "IM Fell English SC", serif; }
+.font-courier      { font-family: "Courier Prime", monospace; font-weight: 700; }
+.font-stardos      { font-family: "Stardos Stencil", sans-serif; font-weight: 700; }
+
+/* Temas de cor do título por gênero/subgênero (combinam com .font-* acima) */
+.hero-banner-title.font-cinzel {
+  background: linear-gradient(135deg, #e74c3c, #6b1a1a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 18px rgba(231,76,60,.5));
+}
+.hero-banner-title.font-creepster {
+  background: linear-gradient(135deg, #ff9100, #3d0a00);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,145,0,.45));
+}
+.hero-banner-title.font-nosifer {
+  background: linear-gradient(135deg, #39ff14, #0d2b0d);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(57,255,20,.45));
+}
+.hero-banner-title.font-pirata {
+  background: linear-gradient(135deg, #5d4e8c, #1a1a2e);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(93,78,140,.45));
+}
+.hero-banner-title.font-butcherman {
+  background: linear-gradient(135deg, #8b0000, #0a0a0a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(139,0,0,.5));
+}
+.hero-banner-title.font-orbitron {
+  background: linear-gradient(135deg, #5ee7ff, #0a3d5c);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(94,231,255,.45));
+}
+.hero-banner-title.font-bangers {
+  background: linear-gradient(135deg, #ffd23f, #ee4035);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,210,63,.45));
+}
+.hero-banner-title.font-luckiest {
+  background: linear-gradient(135deg, #ff8fab, #ff5e62);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,143,171,.45));
+}
+.hero-banner-title.font-medieval {
+  background: linear-gradient(135deg, #ffd700, #6a3093);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,215,0,.45));
+}
+.hero-banner-title.font-uncial {
+  background: linear-gradient(135deg, #e0a458, #5a3a1a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(224,164,88,.45));
+}
+.hero-banner-title.font-playfair {
+  background: linear-gradient(135deg, #cfd9df, #4a5a6a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(207,217,223,.4));
+}
+.hero-banner-title.font-anton {
+  background: linear-gradient(135deg, #ff4e00, #8f0000);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,78,0,.45));
+}
+.hero-banner-title.font-oswald {
+  background: linear-gradient(135deg, #7fd1c1, #2c3e50);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(127,209,193,.4));
+}
+.hero-banner-title.font-special-elite {
+  background: linear-gradient(135deg, #d4af37, #1a1a1a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(212,175,55,.4));
+}
+.hero-banner-title.font-blackops {
+  background: linear-gradient(135deg, #a8a878, #2f2f1a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(168,168,120,.4));
+}
+.hero-banner-title.font-eater {
+  background: linear-gradient(135deg, #7cb518, #1b2a09);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(124,181,24,.45));
+}
+.hero-banner-title.font-metalmania {
+  background: linear-gradient(135deg, #c91f37, #1a0010);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(201,31,55,.45));
+}
+.hero-banner-title.font-newrocker {
+  background: linear-gradient(135deg, #7b2cbf, #10001a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(123,44,191,.45));
+}
+.hero-banner-title.font-wetpaint {
+  background: linear-gradient(135deg, #e60026, #1a0000);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(230,0,38,.45));
+}
+.hero-banner-title.font-bungee {
+  background: linear-gradient(135deg, #d63031, #232323);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(214,48,49,.45));
+}
+.hero-banner-title.font-audiowide {
+  background: linear-gradient(135deg, #4facfe, #120458);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(79,172,254,.45));
+}
+.hero-banner-title.font-pressstart {
+  background: linear-gradient(135deg, #f7b733, #2d1300);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(247,183,51,.45));
+}
+.hero-banner-title.font-sharetech {
+  background: linear-gradient(135deg, #00ff9c, #003322);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(0,255,156,.45));
+}
+.hero-banner-title.font-mochiy {
+  background: linear-gradient(135deg, #ff6ec7, #54a0ff);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,110,199,.45));
+}
+.hero-banner-title.font-fredericka {
+  background: linear-gradient(135deg, #ffe066, #b8860b);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,224,102,.45));
+}
+.hero-banner-title.font-xmas {
+  background: linear-gradient(135deg, #ff4d4d, #1b5e20);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,77,77,.45));
+}
+.hero-banner-title.font-pacifico {
+  background: linear-gradient(135deg, #ffafbd, #c9184a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,175,189,.45));
+}
+.hero-banner-title.font-fredoka {
+  background: linear-gradient(135deg, #00f5d4, #ff6a88);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(0,245,212,.45));
+}
+.hero-banner-title.font-rye {
+  background: linear-gradient(135deg, #8a9b3f, #1a1a1a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(138,155,63,.45));
+}
+.hero-banner-title.font-berkshire {
+  background: linear-gradient(135deg, #ffd3e0, #8e44ad);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,211,224,.45));
+}
+.hero-banner-title.font-metamorphous {
+  background: linear-gradient(135deg, #ffd700, #4a4a4a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(255,215,0,.45));
+}
+.hero-banner-title.font-sancreek {
+  background: linear-gradient(135deg, #d4a574, #1a3a4a);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(212,165,116,.45));
+}
+.hero-banner-title.font-imfell {
+  background: linear-gradient(135deg, #cd853f, #2b1d0e);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(205,133,63,.45));
+}
+.hero-banner-title.font-courier {
+  background: linear-gradient(135deg, #b0bec5, #37474f);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(176,190,197,.45));
+}
+.hero-banner-title.font-stardos {
+  background: linear-gradient(135deg, #8d8741, #2b2b1f);
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  filter: drop-shadow(3px 3px 5px rgba(0,0,0,.7)) drop-shadow(0 0 16px rgba(141,135,65,.45));
+}
+.hero-banner-meta {
+  font-size: .9rem; color: var(--muted); margin-bottom: .5rem;
+}
+.hero-banner-synopsis {
+  font-size: .95rem; line-height: 1.65; color: #cfc6e0;
+  margin-bottom: 1rem;
+}
+.hero-banner-actions { display: flex; gap: 1rem; }
+.hero-btn {
+  display: inline-flex; align-items: center; gap: .5rem;
+  border: none; border-radius: 999px; cursor: pointer;
+  font-size: .95rem; font-weight: 700;
+  padding: .85rem 2.2rem; transition: transform .15s, background .15s, box-shadow .15s;
+}
+.hero-btn:hover { transform: translateY(-2px); }
+.hero-btn-play {
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  box-shadow: 0 6px 24px rgba(123,45,139,.45);
+}
+.hero-btn-play:hover { box-shadow: 0 8px 30px rgba(123,45,139,.65); }
+.hero-btn-info {
+  background: rgba(255,255,255,.08); color: var(--text);
+  border: 1px solid rgba(255,255,255,.25); backdrop-filter: blur(6px);
+}
+.hero-btn-info:hover { background: rgba(255,255,255,.18); }
+.hero-arrow {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(20,20,40,0.6); border: 1px solid rgba(255,255,255,0.15);
+  color: #fff; border-radius: 50%; width: 42px; height: 42px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 1.4rem; z-index: 4;
+  transition: background .15s; user-select: none;
+}
+.hero-arrow:hover { background: rgba(123,45,139,.7); }
+.hero-arrow.left  { left: 1rem; }
+.hero-arrow.right { right: 1rem; }
+.hero-banner-dots {
+  position: absolute; left: 50%; bottom: 1.5rem; z-index: 3;
+  transform: translateX(-50%);
+  display: flex; gap: .6rem;
+}
+.hero-dot {
+  width: 14px; height: 14px; border-radius: 7px;
+  background: rgba(255,255,255,.3); cursor: pointer;
+  transition: background .2s, width .2s;
+}
+.hero-dot:hover { background: rgba(255,255,255,.55); }
+.hero-dot.active { background: var(--accent); width: 38px; }
+
+@media (max-width: 720px) {
+  .hero-banner { height: 70vh; min-height: 460px; }
+  .hero-banner-content { padding: 1.5rem 1.25rem 2rem; max-width: 100%; }
+  .hero-banner-synopsis { font-size: .85rem; }
+  .hero-btn { padding: .65rem 1.5rem; font-size: .85rem; }
+  .hero-arrow { width: 32px; height: 32px; font-size: 1.1rem; }
+  .hero-arrow.left { left: .5rem; }
+  .hero-arrow.right { right: .5rem; }
+}
+
 /* ── Layout ── */
 .layout { display: flex; gap: 0; }
 
