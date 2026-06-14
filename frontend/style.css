@@ -70,7 +70,7 @@ select option { background: #1a1a2e; }
 }
 .hero-banner-bg {
   position: absolute; inset: 0; z-index: 0;
-  background-size: cover; background-position: center;
+  background-size: cover; background-position: center top;
   opacity: 0; transition: opacity 1.2s ease;
 }
 .hero-banner-bg.active { opacity: 1; }
