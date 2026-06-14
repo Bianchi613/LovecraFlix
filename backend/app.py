@@ -620,14 +620,16 @@ def indicacoes(token: str = Depends(verificar_token)):
     base_sql = """
         SELECT DISTINCT f.id, f.titulo_pt, f.titulo, f.genero, f.ano, f.tipo,
                f.poster_local, f.poster_hd,
-               COALESCE(a.nota, 0) as minha_nota
+               COALESCE(a.nota, 0) as minha_nota,
+               (SELECT AVG(a2.nota) FROM avaliacoes a2 JOIN filmes f2 ON f2.id = a2.filme_id
+                WHERE f2.titulo_pt = f.titulo_pt) as media_geral
         FROM filmes f
         LEFT JOIN avaliacoes a ON a.filme_id = f.id AND a.usuario_id = ?
         WHERE f.arquivo_novo IS NOT NULL AND f.tipo NOT IN ('serie','documentario')
           AND (a.nota IS NULL OR a.nota >= 3)
           {filtro_genero}
         GROUP BY f.titulo_pt
-        ORDER BY RANDOM() LIMIT {limite}
+        ORDER BY COALESCE(media_geral, 0) DESC, f.ano DESC LIMIT {limite}
     """
 
     resultado = []

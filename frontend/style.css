@@ -401,8 +401,11 @@ select option { background: #1a1a2e; }
   .hero-arrow { width: 32px; height: 32px; font-size: 1.1rem; }
   .hero-arrow.left { left: .5rem; }
   .hero-arrow.right { right: .5rem; }
-  .indicacao-numero { font-size: 4.5rem; margin-right: -.75rem; }
+  .indicacoes-row { padding-left: 1rem; gap: 1rem; }
+  .indicacao-item { gap: 0; }
+  .indicacao-numero { font-size: 6.5rem; -webkit-text-stroke: 1px var(--accent); }
   .indicacao-card { width: 110px; }
+  .indicacoes-arrow { width: 44px; font-size: 1.8rem; opacity: 1; }
 }
 
 /* ── Layout ── */
@@ -503,25 +506,46 @@ main { flex: 1; padding: 1.5rem 2rem; }
 
 /* ── Indicações (ranking numerado) ── */
 .indicacoes-section { padding: 1.5rem 2rem 0; }
+.indicacoes-title {
+  font-size: 1.5rem; font-weight: 800; color: var(--text);
+  margin-bottom: 1.5rem; letter-spacing: .3px;
+}
+.indicacoes-row-wrap { position: relative; }
 .indicacoes-row {
-  display: flex; overflow-x: auto; padding-bottom: 1rem;
-  scrollbar-width: thin;
+  display: flex; align-items: center; overflow-x: auto;
+  padding: .5rem 1.5rem 1.5rem 1.5rem; gap: 2rem;
+  scrollbar-width: none;
 }
-.indicacao-item {
-  display: flex; align-items: flex-end; flex-shrink: 0;
-  margin-right: 1.25rem;
+.indicacoes-row::-webkit-scrollbar { display: none; }
+.indicacoes-arrow {
+  position: absolute; top: 0; bottom: 0; width: 70px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 2.5rem; color: #fff; z-index: 4;
+  opacity: 0; transition: opacity .2s; user-select: none;
 }
+.indicacoes-row-wrap:hover .indicacoes-arrow { opacity: 1; }
+.indicacoes-arrow.left {
+  left: 0;
+  background: linear-gradient(to right, rgba(10,10,20,.85), transparent);
+}
+.indicacoes-arrow.right {
+  right: 0;
+  background: linear-gradient(to left, rgba(10,10,20,.85), transparent);
+}
+.indicacao-item { display: flex; align-items: flex-end; gap: 0; flex-shrink: 0; }
 .indicacao-numero {
-  font-family: 'Anton', sans-serif;
-  font-size: 7rem; font-weight: 900; line-height: 1;
+  font-size: 11.5rem; font-weight: 400; line-height: 1;
+  font-family: 'Bebas Neue', sans-serif;
   color: transparent;
-  background: linear-gradient(135deg, #b06fcc, #e74c3c);
-  -webkit-background-clip: text; background-clip: text;
-  -webkit-text-stroke: 2px rgba(176,111,204,.6);
-  margin-right: -1.25rem; z-index: 1;
+  -webkit-text-stroke: 1px var(--accent);
+  white-space: nowrap; flex-shrink: 0;
   user-select: none; pointer-events: none;
+  -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
+  mask-image: linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 20%, rgba(0,0,0,0) 100%);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
 }
-.indicacao-card { width: 150px; flex-shrink: 0; z-index: 2; }
+.indicacao-card { width: 150px; }
 
 .badge-horror {
   position: absolute; top: .45rem; right: .45rem;
@@ -699,7 +723,7 @@ main { flex: 1; padding: 1.5rem 2rem; }
 }
 
 /* ── Scrollbar ── */
-::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar { width: 5px; height: 5px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
 ::-webkit-scrollbar-thumb { background: var(--accent2); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--accent); }

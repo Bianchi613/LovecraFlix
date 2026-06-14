@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Butcherman&family=Creepster&family=Nosifer&family=Pirata+One&family=Cinzel+Decorative:wght@700&family=Orbitron:wght@700&family=Bangers&family=Luckiest+Guy&family=MedievalSharp&family=Uncial+Antiqua&family=Playfair+Display:wght@700&family=Anton&family=Oswald:wght@600&family=Special+Elite&family=Black+Ops+One&family=Eater&family=Metal+Mania&family=New+Rocker&family=Rubik+Wet+Paint&family=Bungee&family=Audiowide&family=Press+Start+2P&family=Share+Tech+Mono&family=Mochiy+Pop+One&family=Fredericka+the+Great&family=Mountains+of+Christmas:wght@700&family=Pacifico&family=Fredoka:wght@600&family=Rye&family=Berkshire+Swash&family=Metamorphous&family=Sancreek&family=IM+Fell+English+SC&family=Courier+Prime:wght@700&family=Stardos+Stencil:wght@700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Butcherman&family=Creepster&family=Nosifer&family=Pirata+One&family=Cinzel+Decorative:wght@700&family=Orbitron:wght@700&family=Bangers&family=Luckiest+Guy&family=MedievalSharp&family=Uncial+Antiqua&family=Playfair+Display:wght@700&family=Anton&family=Oswald:wght@600&family=Bebas+Neue&family=Special+Elite&family=Black+Ops+One&family=Eater&family=Metal+Mania&family=New+Rocker&family=Rubik+Wet+Paint&family=Bungee&family=Audiowide&family=Press+Start+2P&family=Share+Tech+Mono&family=Mochiy+Pop+One&family=Fredericka+the+Great&family=Mountains+of+Christmas:wght@700&family=Pacifico&family=Fredoka:wght@600&family=Rye&family=Berkshire+Swash&family=Metamorphous&family=Sancreek&family=IM+Fell+English+SC&family=Courier+Prime:wght@700&family=Stardos+Stencil:wght@700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -45,8 +45,12 @@
 </section>
 
 <section class="indicacoes-section" id="indicacoes-section" style="display:none">
-  <div class="section-title">Indicações para você</div>
-  <div class="indicacoes-row" id="indicacoes-row"></div>
+  <div class="indicacoes-title">Indicações para você</div>
+  <div class="indicacoes-row-wrap">
+    <div class="indicacoes-arrow left" onclick="scrollIndicacoes(-1)">&#8249;</div>
+    <div class="indicacoes-row" id="indicacoes-row"></div>
+    <div class="indicacoes-arrow right" onclick="scrollIndicacoes(1)">&#8250;</div>
+  </div>
 </section>
 
 <div class="layout">
@@ -281,6 +285,11 @@ async function carregarIndicacoes() {
     });
     document.getElementById("indicacoes-section").style.display = "block";
   } catch {}
+}
+
+function scrollIndicacoes(dir) {
+  const row = document.getElementById("indicacoes-row");
+  row.scrollBy({ left: dir * row.clientWidth * 0.8, behavior: "smooth" });
 }
 
 carregarHero();
