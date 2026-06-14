@@ -21,8 +21,8 @@
       background: rgba(20,20,32,0.9);
       border: 1px solid rgba(255,255,255,0.07);
       border-radius: 14px;
-      padding: 2.5rem 2rem;
-      width: 100%; max-width: 360px;
+      padding: 2rem 2rem;
+      width: 100%; max-width: 380px;
       backdrop-filter: blur(12px);
       box-shadow: 0 20px 60px rgba(0,0,0,0.7);
     }
@@ -32,7 +32,10 @@
       background: linear-gradient(135deg, #b06fcc, #e74c3c);
       -webkit-background-clip: text; background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-align: center; margin-bottom: .4rem;
+      margin-bottom: .4rem;
+    }
+    .logo-icon {
+      display: block; width: 100%; height: auto; margin: 0;
     }
 
     .subtitle {
@@ -81,7 +84,7 @@
 </head>
 <body>
 <div class="box">
-  <div class="logo">🐙 LovecraFlix</div>
+  <div class="logo"><img class="logo-icon" src="/static/logo.png" alt="LovecraFlix"></div>
   <div class="subtitle">Acervo pessoal de filmes e séries</div>
 
   <form id="form">

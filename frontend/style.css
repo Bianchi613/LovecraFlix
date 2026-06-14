@@ -36,6 +36,10 @@ header {
   -webkit-text-fill-color: transparent;
   white-space: nowrap; text-decoration: none;
 }
+.logo-icon {
+  height: 6em; width: auto; vertical-align: middle;
+  margin: -2.3em 0;
+}
 
 .search-bar {
   flex: 1; max-width: 420px;
