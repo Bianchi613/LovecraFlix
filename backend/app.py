@@ -112,12 +112,16 @@ def make_token(email: str) -> str:
         "exp": datetime.now(timezone.utc) + timedelta(days=7),
     }, JWT_SECRET, algorithm=JWT_ALG)
 
-def safe_media_path(value: str) -> Path:
-    """Serve apenas arquivos na pasta configurada de mídia."""
+def safe_media_path(value: str, allowed_extensions: set[str]) -> Path:
+    """Serve apenas formatos autorizados dentro da pasta de mídia."""
     p = Path(value).resolve()
-    if not p.is_relative_to(MEDIA_ROOT) or not p.is_file():
+    if not p.is_relative_to(MEDIA_ROOT) or not p.is_file() or p.suffix.lower() not in allowed_extensions:
         raise HTTPException(404, "Arquivo não encontrado")
     return p
+
+VIDEO_EXTENSIONS = {".mp4", ".mkv", ".avi", ".m4v", ".mov", ".webm", ".mpeg", ".mpg", ".wmv"}
+POSTER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+SUBTITLE_EXTENSIONS = {".srt"}
 
 
 def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
@@ -535,7 +539,7 @@ VLC_PATH = Path(r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe")
 @app.get("/api/open-vlc")
 def open_vlc(path: str, token: str = Depends(verificar_token)):
     import subprocess
-    p = safe_media_path(path)
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
     vlc = VLC_PATH if VLC_PATH.exists() else Path("vlc")
     subprocess.Popen([str(vlc), str(p)], creationflags=0x00000008)  # DETACHED_PROCESS
     return {"ok": True}
@@ -754,14 +758,14 @@ def recomendacoes(id: int, token: str = Depends(verificar_token)):
 
 @app.get("/poster")
 def serve_poster(path: str):
-    p = safe_media_path(path)
+    p = safe_media_path(path, POSTER_EXTENSIONS)
     return FileResponse(str(p), media_type="image/jpeg")
 
 
 @app.get("/subtitle")
 def serve_subtitle(path: str):
     """Converte SRT para WebVTT on-the-fly."""
-    p = safe_media_path(path)
+    p = safe_media_path(path, SUBTITLE_EXTENSIONS)
     srt = p.read_text(encoding="utf-8", errors="replace")
     # SRT -> WebVTT: troca vírgula por ponto nos timestamps
     vtt = "WEBVTT\n\n" + re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", srt)
@@ -770,7 +774,7 @@ def serve_subtitle(path: str):
 
 @app.get("/video")
 async def stream_video(request: Request, path: str):
-    p = safe_media_path(path)
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
 
     file_size = p.stat().st_size
     range_header = request.headers.get("range")
@@ -814,7 +818,7 @@ async def stream_video(request: Request, path: str):
 @app.get("/transcode")
 async def transcode_video(path: str, audio_track: int = 0):
     import shutil
-    p = safe_media_path(path)
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
     if not 0 <= audio_track <= 16:
         raise HTTPException(400, "Faixa de áudio inválida")
 
