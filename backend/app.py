@@ -652,7 +652,7 @@ def indicacoes(token: str = Depends(verificar_token)):
         """, (uid,)).fetchall()
         generos_fav = [r["genero"] for r in rows if r["genero"]]
 
-    genero_sql = ",".join(f"'{g}'" for g in generos_fav)
+    genero_placeholders = ",".join("?" for _ in generos_fav)
 
     base_sql = """
         SELECT DISTINCT f.id, f.titulo_pt, f.titulo, f.genero, f.ano, f.tipo,
@@ -672,8 +672,8 @@ def indicacoes(token: str = Depends(verificar_token)):
     resultado = []
     if generos_fav:
         resultado = list(conn.execute(
-            base_sql.format(filtro_genero=f"AND f.genero IN ({genero_sql})", limite=10),
-            (uid or 0,)
+            base_sql.format(filtro_genero=f"AND f.genero IN ({genero_placeholders})", limite=10),
+            (uid or 0, *generos_fav)
         ).fetchall())
 
     if len(resultado) < 10:
