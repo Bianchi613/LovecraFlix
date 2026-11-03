@@ -1,0 +1,9 @@
+config.json
+acervo.db
+*.db
+.lovecraflix_jwt_secret
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
