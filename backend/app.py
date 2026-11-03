@@ -1,5 +1,5 @@
 """LovecraFlix - Servidor local"""
-import asyncio, json, random, re, sqlite3
+import asyncio, json, os, random, re, secrets, sqlite3
 from pathlib import Path
 from fastapi import FastAPI, Request, HTTPException, Depends
 from fastapi.responses import FileResponse, StreamingResponse, HTMLResponse, JSONResponse, RedirectResponse
@@ -14,11 +14,39 @@ _CFG_FILE  = _ROOT / "config.json"
 _CFG       = json.loads(_CFG_FILE.read_text(encoding="utf-8")) if _CFG_FILE.exists() else {}
 
 DB_PATH    = Path(_CFG.get("db_path", _ROOT / "acervo.db"))
+MEDIA_ROOT = Path(_CFG.get("filmes_dir", _ROOT / "Filmes")).resolve()
 STATIC_DIR = _ROOT / "frontend"
 _HOST      = _CFG.get("host", "127.0.0.1")
 _PORT      = int(_CFG.get("port", 8000))
 
-JWT_SECRET = "lovecraflix-local-secret-2024"
+# Segredo estável por instalação, nunca fixo no código publicado.
+# Em instalações compartilhadas, defina LOVECRAFLIX_JWT_SECRET no ambiente.
+def _load_jwt_secret() -> str:
+    configured = os.getenv("LOVECRAFLIX_JWT_SECRET") or _CFG.get("jwt_secret")
+    if configured:
+        if len(configured) < 32:
+            raise RuntimeError("LOVECRAFLIX_JWT_SECRET deve ter pelo menos 32 caracteres")
+        return configured
+    secret_path = _ROOT / ".lovecraflix_jwt_secret"
+    if secret_path.exists():
+        value = secret_path.read_text(encoding="utf-8").strip()
+        if len(value) < 32:
+            raise RuntimeError("Segredo de autenticação local inválido")
+        return value
+    value = secrets.token_urlsafe(48)
+    # Criação exclusiva para não sobrescrever o segredo em uso.
+    try:
+        with secret_path.open("x", encoding="utf-8") as secret_file:
+            secret_file.write(value)
+        try:
+            secret_path.chmod(0o600)
+        except OSError:
+            pass
+        return value
+    except FileExistsError:
+        return secret_path.read_text(encoding="utf-8").strip()
+
+JWT_SECRET = _load_jwt_secret()
 JWT_ALG    = "HS256"
 pwd_ctx    = CryptContext(schemes=["bcrypt"])
 bearer     = HTTPBearer(auto_error=False)
@@ -78,7 +106,22 @@ def get_db():
 
 
 def make_token(email: str) -> str:
-    return jwt.encode({"sub": email}, JWT_SECRET, algorithm=JWT_ALG)
+    from datetime import datetime, timedelta, timezone
+    return jwt.encode({
+        "sub": email,
+        "exp": datetime.now(timezone.utc) + timedelta(days=7),
+    }, JWT_SECRET, algorithm=JWT_ALG)
+
+def safe_media_path(value: str, allowed_extensions: set[str]) -> Path:
+    """Serve apenas formatos autorizados dentro da pasta de mídia."""
+    p = Path(value).resolve()
+    if not p.is_relative_to(MEDIA_ROOT) or not p.is_file() or p.suffix.lower() not in allowed_extensions:
+        raise HTTPException(404, "Arquivo não encontrado")
+    return p
+
+VIDEO_EXTENSIONS = {".mp4", ".mkv", ".avi", ".m4v", ".mov", ".webm", ".mpeg", ".mpg", ".wmv"}
+POSTER_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+SUBTITLE_EXTENSIONS = {".srt"}
 
 
 def verificar_token(credentials: HTTPAuthorizationCredentials = Depends(bearer)):
@@ -494,11 +537,9 @@ def listar_filmes(genero: str = "", busca: str = "", tipo: str = ""):
 VLC_PATH = Path(r"C:\Program Files (x86)\VideoLAN\VLC\vlc.exe")
 
 @app.get("/api/open-vlc")
-def open_vlc(path: str):
+def open_vlc(path: str, token: str = Depends(verificar_token)):
     import subprocess
-    p = Path(path)
-    if not p.exists():
-        raise HTTPException(404, "Arquivo não encontrado")
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
     vlc = VLC_PATH if VLC_PATH.exists() else Path("vlc")
     subprocess.Popen([str(vlc), str(p)], creationflags=0x00000008)  # DETACHED_PROCESS
     return {"ok": True}
@@ -615,7 +656,7 @@ def indicacoes(token: str = Depends(verificar_token)):
         """, (uid,)).fetchall()
         generos_fav = [r["genero"] for r in rows if r["genero"]]
 
-    genero_sql = ",".join(f"'{g}'" for g in generos_fav)
+    genero_placeholders = ",".join("?" for _ in generos_fav)
 
     base_sql = """
         SELECT DISTINCT f.id, f.titulo_pt, f.titulo, f.genero, f.ano, f.tipo,
@@ -635,8 +676,8 @@ def indicacoes(token: str = Depends(verificar_token)):
     resultado = []
     if generos_fav:
         resultado = list(conn.execute(
-            base_sql.format(filtro_genero=f"AND f.genero IN ({genero_sql})", limite=10),
-            (uid or 0,)
+            base_sql.format(filtro_genero=f"AND f.genero IN ({genero_placeholders})", limite=10),
+            (uid or 0, *generos_fav)
         ).fetchall())
 
     if len(resultado) < 10:
@@ -717,18 +758,14 @@ def recomendacoes(id: int, token: str = Depends(verificar_token)):
 
 @app.get("/poster")
 def serve_poster(path: str):
-    p = Path(path)
-    if not p.exists():
-        raise HTTPException(404)
+    p = safe_media_path(path, POSTER_EXTENSIONS)
     return FileResponse(str(p), media_type="image/jpeg")
 
 
 @app.get("/subtitle")
 def serve_subtitle(path: str):
     """Converte SRT para WebVTT on-the-fly."""
-    p = Path(path)
-    if not p.exists():
-        raise HTTPException(404)
+    p = safe_media_path(path, SUBTITLE_EXTENSIONS)
     srt = p.read_text(encoding="utf-8", errors="replace")
     # SRT -> WebVTT: troca vírgula por ponto nos timestamps
     vtt = "WEBVTT\n\n" + re.sub(r"(\d{2}:\d{2}:\d{2}),(\d{3})", r"\1.\2", srt)
@@ -737,9 +774,7 @@ def serve_subtitle(path: str):
 
 @app.get("/video")
 async def stream_video(request: Request, path: str):
-    p = Path(path)
-    if not p.exists():
-        raise HTTPException(404)
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
 
     file_size = p.stat().st_size
     range_header = request.headers.get("range")
@@ -758,10 +793,14 @@ async def stream_video(request: Request, path: str):
         )
 
     # Parse Range
-    m = re.match(r"bytes=(\d+)-(\d*)", range_header)
+    m = re.fullmatch(r"bytes=(\d+)-(\d*)", range_header.strip())
+    if not m:
+        raise HTTPException(416, "Intervalo inválido")
     start = int(m.group(1))
-    end   = int(m.group(2)) if m.group(2) else file_size - 1
-    end   = min(end, file_size - 1)
+    end = int(m.group(2)) if m.group(2) else file_size - 1
+    end = min(end, file_size - 1)
+    if start >= file_size or start > end:
+        raise HTTPException(416, "Intervalo inválido")
     length = end - start + 1
 
     return StreamingResponse(
@@ -779,9 +818,9 @@ async def stream_video(request: Request, path: str):
 @app.get("/transcode")
 async def transcode_video(path: str, audio_track: int = 0):
     import shutil
-    p = Path(path)
-    if not p.exists():
-        raise HTTPException(404)
+    p = safe_media_path(path, VIDEO_EXTENSIONS)
+    if not 0 <= audio_track <= 16:
+        raise HTTPException(400, "Faixa de áudio inválida")
 
     ffmpeg_bin = shutil.which("ffmpeg") or r"C:\ffmpeg\bin\bin\ffmpeg.exe"
     if not Path(ffmpeg_bin).exists():
