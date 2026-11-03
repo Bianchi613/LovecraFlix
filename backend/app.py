@@ -789,7 +789,7 @@ async def stream_video(request: Request, path: str):
         )
 
     # Parse Range
-    m = re.fullmatch(r"bytes=(\\d+)-(\\d*)", range_header.strip())
+    m = re.fullmatch(r"bytes=(\d+)-(\d*)", range_header.strip())
     if not m:
         raise HTTPException(416, "Intervalo inválido")
     start = int(m.group(1))
