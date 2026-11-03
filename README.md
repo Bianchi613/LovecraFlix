@@ -4,6 +4,12 @@ Servidor local de streaming de filmes, séries e documentários com autenticaç�
 
 ---
 
+## Segurança e atualização (novembro de 2026)
+
+A atualização de segurança do [PR #1](https://github.com/Bianchi613/LovecraFlix/pull/1) substitui a chave JWT fixa por segredo gerado/configurável, inclui expiração de sessão e limita o acesso a arquivos à pasta de mídia definida em `filmes_dir`. **Sessões antigas serão invalidadas** e arquivos configurados fora dessa pasta passarão a retornar 404.
+
+O servidor permanece destinado a **uso local**; a autenticação ainda não protege todas as rotas de mídia. Configuração detalhada, testes sugeridos e riscos pendentes estão em [SECURITY.md](SECURITY.md).
+
 ## O que é isso?
 
 O LovecraFlix **não é um serviço online** — ele roda na **sua própria máquina** e serve os vídeos que você já tem no seu disco. Pense nele como um Netflix pessoal para o seu acervo local.
